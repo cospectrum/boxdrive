@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "boxdrive"
+version = "0.0.0"
+description = "boxdrive"
+repository = "https://github.com/cospectrum/boxdrive"
+license = "Apache-2.0"
+authors = ["cospectrum <severinalexeyv@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+fastapi = {extras = ["standard"], version = "^0.115.0"}
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+boxdrive = "boxdrive:main"
