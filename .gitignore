@@ -173,6 +173,7 @@ cython_debug/
 /*
 
 !.gitignore
+!.github
 
 !README.md
 !LICENSE

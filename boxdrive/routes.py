@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.post("/listdir/")
-def listdir(req: ListDir) -> list[str]:
+def listdir(req: ListDir)  -> list[str]:
     path = Path(root) / req.path
     return os.listdir(path)
 
