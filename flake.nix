@@ -24,20 +24,29 @@
       system:
       let
         pkgs = import nixpkgs { inherit system; };
-        poetryToNix = poetry2nix.lib.mkPoetry2Nix { inherit pkgs; };
-        poetryApp = poetryToNix.mkPoetryApplication {
+        p2n = poetry2nix.lib.mkPoetry2Nix { inherit pkgs; };
+        poetryScript = "boxdrive";
+        poetryOverrides = import ./nix/poetry-overrides.nix { p2n = p2n; };
+        preferWheels = true;
+        poetryApp = p2n.mkPoetryApplication {
           projectDir = ./.;
-          preferWheels = true;
+          preferWheels = preferWheels;
+          overrides = poetryOverrides;
+        };
+        poetryEnv = p2n.mkPoetryEnv {
+          projectDir = ./.;
+          preferWheels = preferWheels;
+          overrides = poetryOverrides;
         };
       in
-      rec {
+      {
         apps.default = {
           type = "app";
-          program = "${poetryApp}/bin/boxdrive";
+          program = "${poetryApp}/bin/${poetryScript}";
         };
-        defaultApp = apps.default;
-        devShells.default = import ./shell.nix {
+        devShells.default = import ./nix/shell.nix {
           inherit pkgs;
+          inherit poetryEnv;
         };
       }
     );

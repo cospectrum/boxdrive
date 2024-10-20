@@ -179,7 +179,7 @@ cython_debug/
 
 !flake.lock
 !flake.nix
-!shell.nix
+!nix
 
 !pyproject.toml
 !poetry.lock

@@ -9,8 +9,12 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+fastapi = { extras = ["standard"], version = "^0.115.0" }
 
-fastapi = {extras = ["standard"], version = "^0.115.0"}
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.11.2"
+ruff = "^0.6.7"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
