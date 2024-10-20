@@ -3,14 +3,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
+from boxdrive import common
 from .const import root
-from .common import mkdir
 from .routes import router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    mkdir(root)
+    common.mkdir(root)
     yield
 
 

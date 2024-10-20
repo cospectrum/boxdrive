@@ -2,8 +2,9 @@ import os
 from pathlib import Path
 from fastapi import APIRouter, UploadFile
 
-from .schemas import ListDir
-from .common import filename
+from boxdrive import common
+
+from .schemas import ListDir, FileSaved
 from .const import root
 
 
@@ -17,9 +18,9 @@ def listdir(req: ListDir) -> list[str]:
 
 
 @router.post("/uploadfile/")
-async def upload_file(file: UploadFile) -> dict[str, Path]:
-    save_path = Path(root) / filename(file)
+async def upload_file(file: UploadFile) -> FileSaved:
+    save_path = Path(root) / (file.filename or common.uuid4())
     with open(save_path, "wb") as f:
         content = await file.read()
-        f.write(content)
-    return dict(save_path=save_path)
+        length = f.write(content)
+    return FileSaved(path=str(save_path), length=length)

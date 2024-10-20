@@ -1,14 +1,6 @@
 import uuid
 import os
 
-from fastapi import UploadFile
-
-
-def filename(file: UploadFile) -> str:
-    if file.filename is None:
-        return uuid4()
-    return file.filename
-
 
 def uuid4() -> str:
     return str(uuid.uuid4())
