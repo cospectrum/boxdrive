@@ -4,7 +4,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from boxdrive import MemoryStore, create_app
+from boxdrive import MemoryStore, constants, create_app
 
 
 @pytest.fixture
@@ -97,7 +97,7 @@ def test_list_objects(client: TestClient) -> None:
 
     root = ET.fromstring(response.content.decode())
 
-    s3_ns = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
+    s3_ns = {"s3": constants.S3_XML_NAMESPACE}
 
     contents = root.findall(".//s3:Contents", s3_ns)
     assert len(contents) == 3
@@ -141,3 +141,50 @@ def test_delete_bucket(client: TestClient) -> None:
 
     response = client.delete(f"/{bucket}")
     assert response.status_code == 204
+
+
+def test_list_buckets_and_create_bucket(client: TestClient) -> None:
+    """Test listing buckets functionality."""
+    # Initially no buckets
+    response = client.get("/buckets")
+    assert response.status_code == 200
+    assert response.headers["Content-Type"] == "application/xml"
+
+    import xml.etree.ElementTree as ET
+
+    root = ET.fromstring(response.content.decode())
+    s3_ns = {"s3": constants.S3_XML_NAMESPACE}
+
+    # Check owner information
+    owner = root.find("s3:Owner", s3_ns)
+    assert owner is not None
+    owner_id = owner.find("s3:ID", s3_ns)
+    owner_display_name = owner.find("s3:DisplayName", s3_ns)
+    assert owner_id is not None and owner_id.text == constants.OWNER_ID
+    assert owner_display_name is not None and owner_display_name.text == constants.OWNER_DISPLAY_NAME
+
+    # Check buckets element exists but is empty initially
+    buckets = root.find("s3:Buckets", s3_ns)
+    assert buckets is not None
+    bucket_list = buckets.findall("s3:Bucket", s3_ns)
+    assert len(bucket_list) == 0
+
+    # Create a bucket
+    bucket_name = "test-bucket-for-listing"
+    response = client.post(f"/{bucket_name}")
+    assert response.status_code == 200
+
+    # List buckets again - should now show the created bucket
+    response = client.get("/buckets")
+    assert response.status_code == 200
+
+    root = ET.fromstring(response.content.decode())
+    buckets = root.find("s3:Buckets", s3_ns)
+    assert buckets is not None
+    bucket_list = buckets.findall("s3:Bucket", s3_ns)
+    assert len(bucket_list) == 1
+
+    bucket_name_elem = bucket_list[0].find("s3:Name", s3_ns)
+    creation_date_elem = bucket_list[0].find("s3:CreationDate", s3_ns)
+    assert bucket_name_elem is not None and bucket_name_elem.text == bucket_name
+    assert creation_date_elem is not None and creation_date_elem.text is not None

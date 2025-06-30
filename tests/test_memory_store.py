@@ -118,3 +118,36 @@ async def test_put_object_stream(store: MemoryStore) -> None:
 
     retrieved_data = await store.get_object(key)
     assert retrieved_data == data
+
+
+async def test_list_buckets_and_create_bucket(store: MemoryStore) -> None:
+    """Test bucket listing and creation functionality."""
+    # Initially no buckets
+    buckets = await store.list_buckets()
+    assert len(buckets) == 0
+
+    # Create some buckets
+    bucket_names = ["bucket1", "bucket2", "bucket3"]
+    for bucket_name in bucket_names:
+        success = await store.create_bucket(bucket_name)
+        assert success
+
+    # List buckets
+    buckets = await store.list_buckets()
+    assert len(buckets) == 3
+
+    # Check bucket names
+    bucket_names_found = [bucket.name for bucket in buckets]
+    assert set(bucket_names_found) == set(bucket_names)
+
+    # Check that creation dates are set
+    for bucket in buckets:
+        assert bucket.creation_date is not None
+
+    # Try to create the same bucket again
+    success = await store.create_bucket("bucket1")
+    assert not success  # Should return False for duplicate
+
+    # Verify bucket count hasn't changed
+    buckets = await store.list_buckets()
+    assert len(buckets) == 3

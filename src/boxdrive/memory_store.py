@@ -4,7 +4,8 @@ import datetime
 import hashlib
 from collections.abc import AsyncIterator
 
-from .schemas import ContentType, ETag, Key, MaxKeys, ObjectMetadata
+from . import constants
+from .schemas import BucketMetadata, ContentType, ETag, Key, MaxKeys, ObjectMetadata
 from .store import ObjectStore
 
 
@@ -15,6 +16,21 @@ class MemoryStore(ObjectStore):
         self._objects: dict[Key, bytes] = {}
         self._metadata: dict[Key, ObjectMetadata] = {}
         self._created_at: dict[Key, datetime.datetime] = {}
+        self._buckets: dict[str, datetime.datetime] = {}
+
+    async def list_buckets(self) -> list[BucketMetadata]:
+        """List all buckets in the store."""
+        buckets = []
+        for bucket_name, creation_date in self._buckets.items():
+            buckets.append(BucketMetadata(name=bucket_name, creation_date=creation_date))
+        return buckets
+
+    async def create_bucket(self, bucket_name: str) -> bool:
+        """Create a new bucket in the store."""
+        if bucket_name in self._buckets:
+            return False
+        self._buckets[bucket_name] = datetime.datetime.now(datetime.UTC)
+        return True
 
     async def list_objects(
         self, prefix: Key | None = None, delimiter: str | None = None, max_keys: MaxKeys | None = None
@@ -39,7 +55,7 @@ class MemoryStore(ObjectStore):
         """Put an object into the store."""
         now = datetime.datetime.now(datetime.UTC)
         etag = hashlib.md5(data).hexdigest()
-        final_content_type = content_type or "application/octet-stream"
+        final_content_type = content_type or constants.DEFAULT_CONTENT_TYPE
         metadata = ObjectMetadata(
             key=key, size=len(data), last_modified=now, etag=etag, content_type=final_content_type
         )
@@ -75,9 +91,8 @@ class MemoryStore(ObjectStore):
         data = self._objects[key]
 
         async def stream() -> AsyncIterator[bytes]:
-            chunk_size = 8192
-            for i in range(0, len(data), chunk_size):
-                yield data[i : i + chunk_size]
+            for i in range(0, len(data), constants.STREAM_CHUNK_SIZE):
+                yield data[i : i + constants.STREAM_CHUNK_SIZE]
 
         return stream()
 

@@ -80,6 +80,13 @@ ContentType = Annotated[str, AfterValidator(validate_content_type)]
 MaxKeys = Annotated[int, AfterValidator(validate_max_keys)]
 
 
+class BucketMetadata(BaseModel):
+    """Metadata for a bucket in the store."""
+
+    name: BucketName
+    creation_date: datetime.datetime
+
+
 class ObjectMetadata(BaseModel):
     """Metadata for an object in the store."""
 

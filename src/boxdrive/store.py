@@ -4,11 +4,29 @@ import datetime
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 
-from .schemas import ContentType, ETag, Key, MaxKeys, ObjectMetadata
+from .schemas import (
+    BucketMetadata,
+    BucketName,
+    ContentType,
+    ETag,
+    Key,
+    MaxKeys,
+    ObjectMetadata,
+)
 
 
 class ObjectStore(ABC):
     """Abstract base class for object store implementations."""
+
+    @abstractmethod
+    async def list_buckets(self) -> list[BucketMetadata]:
+        """List all buckets in the store."""
+        pass
+
+    @abstractmethod
+    async def create_bucket(self, bucket_name: BucketName) -> bool:
+        """Create a new bucket in the store."""
+        pass
 
     @abstractmethod
     async def list_objects(
