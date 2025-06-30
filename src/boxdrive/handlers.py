@@ -1,16 +1,18 @@
 """S3-compatible API handlers for BoxDrive."""
 
+import logging
 import xml.etree.ElementTree as ET
 from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
-from . import constants
+from . import constants, exceptions
 from .schemas import BucketName, ContentType, Key, MaxKeys
 from .store import ObjectStore
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def get_store(request: Request) -> ObjectStore:
@@ -184,31 +186,34 @@ async def put_object(
 
 @router.delete("/{bucket}/{key:path}")
 async def delete_object(bucket: BucketName, key: Key, store: ObjectStore = Depends(get_store)) -> Response:
-    success = await store.delete_object(bucket, key)
-    if not success:
-        raise HTTPException(status_code=404, detail="Object not found")
+    try:
+        await store.delete_object(bucket, key)
+    except exceptions.NoSuchBucket:
+        logger.info("Bucket %s not found", bucket)
+    except exceptions.NoSuchKey:
+        logger.info("Object %s not found in bucket %s", key, bucket)
 
     root = ET.Element("DeleteResult", xmlns=constants.S3_XML_NAMESPACE)
     deleted = ET.SubElement(root, "Deleted")
     ET.SubElement(deleted, "Key").text = key
     ET.SubElement(deleted, "VersionId").text = "null"
-
     xml_str = ET.tostring(root, encoding="unicode")
-
     return Response(content=xml_str, media_type="application/xml", status_code=204)
 
 
 @router.put("/{bucket}")
 async def create_bucket(bucket: BucketName, store: ObjectStore = Depends(get_store)) -> Response:
-    success = await store.create_bucket(bucket)
-    if not success:
+    try:
+        await store.create_bucket(bucket)
+    except exceptions.BucketAlreadyExists:
         raise HTTPException(status_code=409, detail="Bucket already exists")
     return Response(status_code=200, headers={"Location": f"/{bucket}"})
 
 
 @router.delete("/{bucket}")
 async def delete_bucket(bucket: BucketName, store: ObjectStore = Depends(get_store)) -> Response:
-    success = await store.delete_bucket(bucket)
-    if not success:
-        raise HTTPException(status_code=404, detail="Bucket not found")
+    try:
+        await store.delete_bucket(bucket)
+    except exceptions.NoSuchBucket:
+        logger.info("Bucket %s not found", bucket)
     return Response(status_code=204)

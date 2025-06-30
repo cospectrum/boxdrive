@@ -1,4 +1,9 @@
 # BoxDrive
+[![github]](https://github.com/cospectrum/boxdrive)
+[![ci]](https://github.com/cospectrum/boxdrive/actions)
+
+[github]: https://img.shields.io/badge/github-cospectrum/boxdrive-8da0cb?logo=github
+[ci]: https://github.com/cospectrum/boxdrive/workflows/ci/badge.svg
 
 S3-compatible API with an **Abstract Object Store** in Python (FastAPI).
 Work in progress.
@@ -60,8 +65,8 @@ from boxdrive import (
 
 class MyCustomStore(ObjectStore):
     async def list_buckets(self) -> list[BucketMetadata]: ...
-    async def create_bucket(self, bucket_name: str) -> bool: ...
-    async def delete_bucket(self, bucket_name: str) -> bool: ...
+    async def create_bucket(self, bucket_name: str) -> None: ...
+    async def delete_bucket(self, bucket_name: str) -> None: ...
     async def list_objects(
         self, bucket_name: str, prefix: str | None = None, delimiter: str | None = None, max_keys: MaxKeys | None = None
     ) -> AsyncIterator[ObjectMetadata]:
@@ -72,7 +77,7 @@ class MyCustomStore(ObjectStore):
     async def put_object(
         self, bucket_name: str, key: str, data: bytes, content_type: ContentType | None = None
     ) -> ETag: ...
-    async def delete_object(self, bucket_name: str, key: str) -> bool: ...
+    async def delete_object(self, bucket_name: str, key: str) -> None: ...
     async def head_object(self, bucket_name: str, key: str) -> ObjectMetadata | None: ...
 ```
 

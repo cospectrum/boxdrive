@@ -6,6 +6,8 @@ from collections.abc import AsyncIterator
 
 from pydantic import BaseModel
 
+from boxdrive import exceptions
+
 from .. import constants
 from ..schemas import BucketMetadata, BucketName, ContentType, ETag, Key, MaxKeys, Object, ObjectMetadata
 from ..store import ObjectStore
@@ -32,20 +34,18 @@ class MemoryStore(ObjectStore):
             buckets.append(BucketMetadata(name=bucket.name, creation_date=bucket.creation_date))
         return buckets
 
-    async def create_bucket(self, bucket_name: BucketName) -> bool:
+    async def create_bucket(self, bucket_name: BucketName) -> None:
         """Create a new bucket in the store."""
         if bucket_name in self._buckets:
-            return False
+            raise exceptions.BucketAlreadyExists
         self._buckets[bucket_name] = Bucket(
             name=bucket_name, creation_date=datetime.datetime.now(datetime.UTC), objects={}
         )
-        return True
 
-    async def delete_bucket(self, bucket_name: BucketName) -> bool:
-        if bucket_name in self._buckets:
-            del self._buckets[bucket_name]
-            return True
-        return False
+    async def delete_bucket(self, bucket_name: BucketName) -> None:
+        if bucket_name not in self._buckets:
+            raise exceptions.NoSuchBucket
+        del self._buckets[bucket_name]
 
     async def list_objects(
         self, bucket_name: str, prefix: Key | None = None, delimiter: str | None = None, max_keys: MaxKeys | None = None
@@ -90,15 +90,14 @@ class MemoryStore(ObjectStore):
         bucket.objects[key] = Object(data=data, metadata=metadata)
         return etag
 
-    async def delete_object(self, bucket_name: str, key: Key) -> bool:
+    async def delete_object(self, bucket_name: str, key: Key) -> None:
         """Delete an object from a bucket."""
         if bucket_name not in self._buckets:
-            return False
+            raise exceptions.NoSuchBucket
         bucket = self._buckets[bucket_name]
-        if key in bucket.objects:
-            del bucket.objects[key]
-            return True
-        return False
+        if key not in bucket.objects:
+            raise exceptions.NoSuchKey
+        del bucket.objects[key]
 
     async def head_object(self, bucket_name: str, key: Key) -> ObjectMetadata | None:
         """Get object metadata without downloading the content."""
