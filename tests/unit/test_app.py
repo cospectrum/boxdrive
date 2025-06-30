@@ -185,3 +185,41 @@ def test_list_buckets_and_create_bucket(client: TestClient) -> None:
     creation_date_elem = bucket_list[0].find("s3:CreationDate", s3_ns)
     assert bucket_name_elem is not None and bucket_name_elem.text == bucket_name
     assert creation_date_elem is not None and creation_date_elem.text is not None
+
+
+def test_list_objects_v2(client: TestClient) -> None:
+    bucket = "test-bucket"
+
+    client.put(f"/{bucket}")
+    test_objects = [
+        ("file1.txt", b"content1"),
+        ("file2.txt", b"content2"),
+        ("folder/file3.txt", b"content3"),
+    ]
+
+    for obj_key, obj_content in test_objects:
+        client.put(
+            f"/{bucket}/{obj_key}",
+            content=obj_content,
+            headers={"Content-Type": "text/plain"},
+        )
+
+    response = client.get(f"/{bucket}?list-type=2")
+    assert response.status_code == 200, response.content
+    assert response.headers["Content-Type"] == "application/xml"
+
+    import xml.etree.ElementTree as ET
+
+    root = ET.fromstring(response.content.decode())
+    s3_ns = {"s3": constants.S3_XML_NAMESPACE}
+
+    contents = root.findall(".//s3:Contents", s3_ns)
+    assert len(contents) == 3
+
+    keys = []
+    for content in contents:
+        key_elem = content.find("s3:Key", s3_ns)
+        if key_elem is not None and key_elem.text is not None:
+            keys.append(key_elem.text)
+
+    assert "file1.txt" in keys

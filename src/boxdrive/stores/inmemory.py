@@ -101,8 +101,23 @@ class InMemoryStore(ObjectStore):
         prefix: Key | None = None,
         start_after: Key | None = None,
     ) -> ListObjectsInfo:
-        """List objects in a bucket."""
-        return ListObjectsInfo(objects=[], is_truncated=False)
+        bucket = self.buckets.get(bucket_name)
+        if bucket is None:
+            raise exceptions.NoSuchBucket
+
+        objects = [obj.metadata for obj in bucket.objects.values()]
+        if prefix:
+            objects = [obj for obj in objects if obj.key.startswith(prefix)]
+        objects = sorted(objects, key=lambda obj: obj.key)
+
+        after = continuation_token or start_after
+        if after:
+            objects = [obj for obj in objects if obj.key > after]
+
+        is_truncated = len(objects) > max_keys
+        objects = objects[:max_keys]
+
+        return ListObjectsInfo(objects=objects, is_truncated=is_truncated)
 
     async def get_object(self, bucket_name: str, key: Key) -> Object | None:
         """Get an object by bucket and key."""
