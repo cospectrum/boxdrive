@@ -32,6 +32,7 @@ async def test_create_bucket(store: InMemoryStore) -> None:
 async def test_delete_bucket(store: InMemoryStore) -> None:
     await store.create_bucket("bucket1")
     await store.delete_bucket("bucket1")
+    assert await store.list_buckets() == []
     with pytest.raises(NoSuchBucket):
         await store.delete_bucket("bucket1")
 
