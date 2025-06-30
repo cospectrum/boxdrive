@@ -1,3 +1,3 @@
-from .memory import MemoryStore
+from .inmemory import InMemoryStore
 
-__all__ = ["MemoryStore"]
+__all__ = ["InMemoryStore"]

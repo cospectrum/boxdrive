@@ -3,15 +3,15 @@
 import pytest
 
 from boxdrive.exceptions import BucketAlreadyExists
-from boxdrive.stores import MemoryStore
+from boxdrive.stores import InMemoryStore
 
 
 @pytest.fixture
-async def store() -> MemoryStore:
-    return MemoryStore()
+async def store() -> InMemoryStore:
+    return InMemoryStore()
 
 
-async def test_put_and_get_object(store: MemoryStore) -> None:
+async def test_put_and_get_object(store: InMemoryStore) -> None:
     BUCKET = "test-bucket"
 
     key = "test.txt"
@@ -30,7 +30,7 @@ async def test_put_and_get_object(store: MemoryStore) -> None:
     assert metadata.etag == etag
 
 
-async def test_delete_object(store: MemoryStore) -> None:
+async def test_delete_object(store: InMemoryStore) -> None:
     BUCKET = "test-bucket"
 
     key = "test.txt"
@@ -41,7 +41,7 @@ async def test_delete_object(store: MemoryStore) -> None:
     assert (await store.get_object(BUCKET, key)) is None
 
 
-async def test_list_objects(store: MemoryStore) -> None:
+async def test_list_objects(store: InMemoryStore) -> None:
     BUCKET = "test-bucket"
 
     await store.create_bucket(BUCKET)
@@ -66,7 +66,7 @@ async def test_list_objects(store: MemoryStore) -> None:
     assert "folder/file3.txt" in folder_objects
 
 
-async def test_list_buckets_and_create_bucket(store: MemoryStore) -> None:
+async def test_list_buckets_and_create_bucket(store: InMemoryStore) -> None:
     buckets = await store.list_buckets()
     assert len(buckets) == 0
     bucket_names = ["bucket1", "bucket2", "bucket3"]

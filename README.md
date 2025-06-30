@@ -21,9 +21,9 @@ pip install -e git+https://github.com/cospectrum/boxdrive.git
 1. create `main.py`:
 ```python
 from boxdrive import create_app
-from boxdrive.stores import MemoryStore
+from boxdrive.stores import InMemoryStore
 
-store = MemoryStore()
+store = InMemoryStore()
 app = create_app(store)
 ```
 

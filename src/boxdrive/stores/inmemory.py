@@ -2,6 +2,7 @@
 
 import datetime
 import hashlib
+import logging
 from collections.abc import AsyncIterator
 
 from pydantic import BaseModel
@@ -12,65 +13,74 @@ from .. import constants
 from ..schemas import BucketMetadata, BucketName, ContentType, ETag, Key, MaxKeys, Object, ObjectMetadata
 from ..store import ObjectStore
 
+logger = logging.getLogger(__name__)
+
 
 class Bucket(BaseModel):
-    """Represents a bucket with its objects and creation date."""
+    """Represents a bucket with its objects and metadata."""
 
-    name: BucketName
-    creation_date: datetime.datetime
+    metadata: BucketMetadata
     objects: dict[Key, "Object"]
 
 
-class MemoryStore(ObjectStore):
+Buckets = dict[BucketName, Bucket]
+
+
+class InMemoryStore(ObjectStore):
     """In-memory object store implementation."""
 
-    def __init__(self) -> None:
-        self._buckets: dict[BucketName, Bucket] = {}
+    def __init__(self, *, buckets: Buckets | None = None) -> None:
+        self._buckets: dict[BucketName, Bucket] = buckets or {}
 
     async def list_buckets(self) -> list[BucketMetadata]:
         """List all buckets in the store."""
         buckets = []
         for bucket in self._buckets.values():
-            buckets.append(BucketMetadata(name=bucket.name, creation_date=bucket.creation_date))
+            buckets.append(bucket.metadata)
         return buckets
 
     async def create_bucket(self, bucket_name: BucketName) -> None:
         """Create a new bucket in the store."""
-        if bucket_name in self._buckets:
-            raise exceptions.BucketAlreadyExists
-        self._buckets[bucket_name] = Bucket(
-            name=bucket_name, creation_date=datetime.datetime.now(datetime.UTC), objects={}
+        bucket = Bucket(
+            objects={},
+            metadata=BucketMetadata(
+                name=bucket_name,
+                creation_date=datetime.datetime.now(datetime.UTC),
+            ),
         )
+        inserted = self._buckets.setdefault(bucket_name, bucket)
+        if inserted != bucket:
+            raise exceptions.BucketAlreadyExists
 
     async def delete_bucket(self, bucket_name: BucketName) -> None:
-        if bucket_name not in self._buckets:
+        try:
+            del self._buckets[bucket_name]
+        except KeyError:
             raise exceptions.NoSuchBucket
-        del self._buckets[bucket_name]
 
     async def list_objects(
         self, bucket_name: str, prefix: Key | None = None, delimiter: str | None = None, max_keys: MaxKeys | None = None
     ) -> AsyncIterator[ObjectMetadata]:
-        _ = delimiter
-        if bucket_name not in self._buckets:
+        bucket = self._buckets.get(bucket_name)
+        if bucket is None:
             raise exceptions.NoSuchBucket
 
-        bucket = self._buckets[bucket_name]
-        keys = list(bucket.objects.keys())
-
+        objects = [obj.metadata for obj in bucket.objects.values()]
         if prefix:
-            keys = [k for k in keys if k.startswith(prefix)]
+            objects = [obj for obj in objects if obj.key.startswith(prefix)]
 
         if max_keys:
-            keys = keys[:max_keys]
+            objects = objects[:max_keys]
 
-        for key in keys:
-            yield bucket.objects[key].metadata
+        for obj in objects:
+            yield obj
 
     async def get_object(self, bucket_name: str, key: Key) -> Object | None:
         """Get an object by bucket and key."""
-        if bucket_name not in self._buckets:
+        try:
+            bucket = self._buckets[bucket_name]
+        except KeyError:
             return None
-        bucket = self._buckets[bucket_name]
         return bucket.objects.get(key)
 
     async def put_object(
@@ -80,31 +90,36 @@ class MemoryStore(ObjectStore):
         if bucket_name not in self._buckets:
             await self.create_bucket(bucket_name)
 
-        bucket = self._buckets[bucket_name]
-        now = datetime.datetime.now(datetime.UTC)
         etag = hashlib.md5(data).hexdigest()
+        now = datetime.datetime.now(datetime.UTC)
         final_content_type = content_type or constants.DEFAULT_CONTENT_TYPE
         metadata = ObjectMetadata(
             key=key, size=len(data), last_modified=now, etag=etag, content_type=final_content_type
         )
+        obj = Object(data=data, metadata=metadata)
 
-        bucket.objects[key] = Object(data=data, metadata=metadata)
+        bucket = self._buckets.get(bucket_name)
+        if bucket is None:
+            return etag
+        bucket.objects[key] = obj
         return etag
 
     async def delete_object(self, bucket_name: str, key: Key) -> None:
         """Delete an object from a bucket."""
-        if bucket_name not in self._buckets:
+        bucket = self._buckets.get(bucket_name)
+        if bucket is None:
             raise exceptions.NoSuchBucket
-        bucket = self._buckets[bucket_name]
-        if key not in bucket.objects:
+        try:
+            del bucket.objects[key]
+        except KeyError:
             raise exceptions.NoSuchKey
-        del bucket.objects[key]
 
     async def head_object(self, bucket_name: str, key: Key) -> ObjectMetadata | None:
         """Get object metadata without downloading the content."""
-        if bucket_name not in self._buckets:
+        bucket = self._buckets.get(bucket_name)
+        if bucket is None:
             return None
-        bucket = self._buckets[bucket_name]
-        if key in bucket.objects:
+        try:
             return bucket.objects[key].metadata
-        return None
+        except KeyError:
+            return None
