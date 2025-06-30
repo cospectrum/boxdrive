@@ -35,6 +35,10 @@ plugins = ["pydantic.mypy"]
 module = ["botocore.*", "boto3"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "examples.custom_store"
+disable_error_code = ["empty-body"]
+
 [tool.ruff]
 line-length = 120
 

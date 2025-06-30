@@ -43,7 +43,9 @@ class ObjectStore(ABC):
     ) -> AsyncIterator[ObjectMetadata]:
         """List objects in a bucket."""
         raise NotImplementedError
-        yield ObjectMetadata(key="", size=0, last_modified=datetime.datetime.now(), etag="", content_type="")
+        yield ObjectMetadata(
+            key="", size=0, last_modified=datetime.datetime.now(datetime.UTC), etag="", content_type=""
+        )
 
     @abstractmethod
     async def get_object(self, bucket_name: BucketName, key: Key) -> bytes | None:
