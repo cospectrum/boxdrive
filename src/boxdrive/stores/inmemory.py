@@ -30,14 +30,11 @@ class InMemoryStore(ObjectStore):
     """In-memory object store implementation."""
 
     def __init__(self, *, buckets: Buckets | None = None) -> None:
-        self._buckets: dict[BucketName, Bucket] = buckets or {}
+        self.buckets = buckets or {}
 
     async def list_buckets(self) -> list[BucketMetadata]:
         """List all buckets in the store."""
-        buckets = []
-        for bucket in self._buckets.values():
-            buckets.append(bucket.metadata)
-        return buckets
+        return [bucket.metadata for bucket in self.buckets.values()]
 
     async def create_bucket(self, bucket_name: BucketName) -> None:
         """Create a new bucket in the store."""
@@ -48,20 +45,20 @@ class InMemoryStore(ObjectStore):
                 creation_date=datetime.datetime.now(datetime.UTC),
             ),
         )
-        inserted = self._buckets.setdefault(bucket_name, bucket)
-        if inserted != bucket:
+        in_store_bucket = self.buckets.setdefault(bucket_name, bucket)
+        if in_store_bucket != bucket:
             raise exceptions.BucketAlreadyExists
 
     async def delete_bucket(self, bucket_name: BucketName) -> None:
         try:
-            del self._buckets[bucket_name]
+            del self.buckets[bucket_name]
         except KeyError:
             raise exceptions.NoSuchBucket
 
     async def list_objects(
         self, bucket_name: str, prefix: Key | None = None, delimiter: str | None = None, max_keys: MaxKeys | None = None
     ) -> AsyncIterator[ObjectMetadata]:
-        bucket = self._buckets.get(bucket_name)
+        bucket = self.buckets.get(bucket_name)
         if bucket is None:
             raise exceptions.NoSuchBucket
 
@@ -77,9 +74,8 @@ class InMemoryStore(ObjectStore):
 
     async def get_object(self, bucket_name: str, key: Key) -> Object | None:
         """Get an object by bucket and key."""
-        try:
-            bucket = self._buckets[bucket_name]
-        except KeyError:
+        bucket = self.buckets.get(bucket_name)
+        if bucket is None:
             return None
         return bucket.objects.get(key)
 
@@ -87,7 +83,7 @@ class InMemoryStore(ObjectStore):
         self, bucket_name: str, key: Key, data: bytes, content_type: ContentType | None = None
     ) -> ETag:
         """Put an object into a bucket."""
-        if bucket_name not in self._buckets:
+        if bucket_name not in self.buckets:
             await self.create_bucket(bucket_name)
 
         etag = hashlib.md5(data).hexdigest()
@@ -98,7 +94,7 @@ class InMemoryStore(ObjectStore):
         )
         obj = Object(data=data, metadata=metadata)
 
-        bucket = self._buckets.get(bucket_name)
+        bucket = self.buckets.get(bucket_name)
         if bucket is None:
             return etag
         bucket.objects[key] = obj
@@ -106,7 +102,7 @@ class InMemoryStore(ObjectStore):
 
     async def delete_object(self, bucket_name: str, key: Key) -> None:
         """Delete an object from a bucket."""
-        bucket = self._buckets.get(bucket_name)
+        bucket = self.buckets.get(bucket_name)
         if bucket is None:
             raise exceptions.NoSuchBucket
         try:
@@ -116,7 +112,7 @@ class InMemoryStore(ObjectStore):
 
     async def head_object(self, bucket_name: str, key: Key) -> ObjectMetadata | None:
         """Get object metadata without downloading the content."""
-        bucket = self._buckets.get(bucket_name)
+        bucket = self.buckets.get(bucket_name)
         if bucket is None:
             return None
         try:
