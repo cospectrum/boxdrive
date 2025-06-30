@@ -125,7 +125,7 @@ class S3:
         if obj is None:
             raise HTTPException(status_code=404, detail="Object not found")
         data = obj.data
-        metadata = obj.metadata
+        metadata = obj.info
         start = 0
         end = len(data) - 1
         original_size = len(data)

@@ -66,7 +66,7 @@ async def test_put_object(store: InMemoryStore) -> None:
     obj = await store.get_object("bucket1", "key1")
     assert obj is not None
     assert obj.data == b"data"
-    assert obj.metadata.content_type == "text/plain"
+    assert obj.info.content_type == "text/plain"
 
 
 async def test_delete_object(store: InMemoryStore) -> None:

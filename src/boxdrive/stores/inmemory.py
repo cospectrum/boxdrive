@@ -26,9 +26,9 @@ logger = logging.getLogger(__name__)
 
 
 class Bucket(BaseModel):
-    """Represents a bucket with its objects and metadata."""
+    """Represents a bucket with its objects and info."""
 
-    metadata: BucketInfo
+    info: BucketInfo
     objects: dict[Key, "Object"]
 
 
@@ -43,13 +43,13 @@ class InMemoryStore(ObjectStore):
 
     async def list_buckets(self) -> list[BucketInfo]:
         """List all buckets in the store."""
-        return [bucket.metadata for bucket in self.buckets.values()]
+        return [bucket.info for bucket in self.buckets.values()]
 
     async def create_bucket(self, bucket_name: BucketName) -> None:
         """Create a new bucket in the store."""
         bucket = Bucket(
             objects={},
-            metadata=BucketInfo(
+            info=BucketInfo(
                 name=bucket_name,
                 creation_date=datetime.datetime.now(datetime.UTC),
             ),
@@ -77,7 +77,7 @@ class InMemoryStore(ObjectStore):
         if bucket is None:
             raise exceptions.NoSuchBucket
 
-        objects = [obj.metadata for obj in bucket.objects.values()]
+        objects = [obj.info for obj in bucket.objects.values()]
         if prefix:
             objects = [obj for obj in objects if obj.key.startswith(prefix)]
 
@@ -105,7 +105,7 @@ class InMemoryStore(ObjectStore):
         if bucket is None:
             raise exceptions.NoSuchBucket
 
-        objects = [obj.metadata for obj in bucket.objects.values()]
+        objects = [obj.info for obj in bucket.objects.values()]
         if prefix:
             objects = [obj for obj in objects if obj.key.startswith(prefix)]
         objects = sorted(objects, key=lambda obj: obj.key)
@@ -136,8 +136,8 @@ class InMemoryStore(ObjectStore):
         etag = hashlib.md5(data).hexdigest()
         now = datetime.datetime.now(datetime.UTC)
         final_content_type = content_type or constants.DEFAULT_CONTENT_TYPE
-        metadata = ObjectInfo(key=key, size=len(data), last_modified=now, etag=etag, content_type=final_content_type)
-        obj = Object(data=data, metadata=metadata)
+        info = ObjectInfo(key=key, size=len(data), last_modified=now, etag=etag, content_type=final_content_type)
+        obj = Object(data=data, info=info)
 
         bucket = self.buckets.get(bucket_name)
         if bucket is None:
@@ -156,11 +156,11 @@ class InMemoryStore(ObjectStore):
             raise exceptions.NoSuchKey
 
     async def head_object(self, bucket_name: str, key: Key) -> ObjectInfo | None:
-        """Get object metadata without downloading the content."""
+        """Get object info without downloading the content."""
         bucket = self.buckets.get(bucket_name)
         if bucket is None:
             return None
         try:
-            return bucket.objects[key].metadata
+            return bucket.objects[key].info
         except KeyError:
             return None
