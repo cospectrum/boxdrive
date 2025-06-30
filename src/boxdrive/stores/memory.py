@@ -50,8 +50,9 @@ class MemoryStore(ObjectStore):
     async def list_objects(
         self, bucket_name: str, prefix: Key | None = None, delimiter: str | None = None, max_keys: MaxKeys | None = None
     ) -> AsyncIterator[ObjectMetadata]:
+        _ = delimiter
         if bucket_name not in self._buckets:
-            return
+            raise exceptions.NoSuchBucket
 
         bucket = self._buckets[bucket_name]
         keys = list(bucket.objects.keys())

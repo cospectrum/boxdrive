@@ -3,6 +3,7 @@
 import logging
 import xml.etree.ElementTree as ET
 from collections.abc import AsyncIterator
+from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
@@ -46,23 +47,25 @@ async def list_objects(
     prefix: Key | None = Query(None),
     delimiter: str | None = Query(None),
     max_keys: MaxKeys | None = Query(1000),
-    continuation_token: str | None = Query(None),
-    start_after: str | None = Query(None),
     store: ObjectStore = Depends(get_store),
 ) -> Response:
-    objects: list[dict[str, object]] = []
+    objects: list[dict[str, Any]] = []
 
-    async for obj in store.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys):
-        objects.append(
-            {
-                "Key": obj.key,
-                "Size": obj.size,
-                "LastModified": obj.last_modified.isoformat(),
-                "ETag": f'"{obj.etag}"' if obj.etag else None,
-                "StorageClass": constants.DEFAULT_STORAGE_CLASS,
-                "Owner": {"ID": constants.OWNER_ID, "DisplayName": constants.OWNER_DISPLAY_NAME},
-            }
-        )
+    try:
+        async for obj in store.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys):
+            objects.append(
+                {
+                    "Key": obj.key,
+                    "Size": obj.size,
+                    "LastModified": obj.last_modified.isoformat(),
+                    "ETag": f'"{obj.etag}"' if obj.etag else None,
+                    "StorageClass": constants.DEFAULT_STORAGE_CLASS,
+                    "Owner": {"ID": constants.OWNER_ID, "DisplayName": constants.OWNER_DISPLAY_NAME},
+                }
+            )
+    except exceptions.NoSuchBucket:
+        logger.info("Bucket %s not found", bucket)
+        raise HTTPException(status_code=404, detail="The specified bucket does not exist.")
 
     root = ET.Element("ListBucketResult", xmlns=constants.S3_XML_NAMESPACE)
     ET.SubElement(root, "Name").text = bucket
@@ -72,9 +75,6 @@ async def list_objects(
 
     if delimiter:
         ET.SubElement(root, "Delimiter").text = delimiter
-
-    if continuation_token:
-        ET.SubElement(root, "NextContinuationToken").text = continuation_token
 
     for obj_dict in objects:
         contents = ET.SubElement(root, "Contents")
