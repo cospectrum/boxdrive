@@ -1,10 +1,11 @@
 """In-memory implementation of ObjectStore for testing and development."""
 
+import datetime
 import hashlib
 from collections.abc import AsyncIterator
-from datetime import UTC, datetime
 
-from .store import ObjectMetadata, ObjectStore
+from .schemas import ObjectMetadata
+from .store import ObjectStore
 
 
 class MemoryStore(ObjectStore):
@@ -13,7 +14,7 @@ class MemoryStore(ObjectStore):
     def __init__(self) -> None:
         self._objects: dict[str, bytes] = {}
         self._metadata: dict[str, ObjectMetadata] = {}
-        self._created_at: dict[str, datetime] = {}
+        self._created_at: dict[str, datetime.datetime] = {}
 
     async def list_objects(
         self, prefix: str | None = None, delimiter: str | None = None, max_keys: int | None = None
@@ -36,9 +37,12 @@ class MemoryStore(ObjectStore):
 
     async def put_object(self, key: str, data: bytes, content_type: str | None = None) -> str:
         """Put an object into the store."""
-        now = datetime.now(UTC)
+        now = datetime.datetime.now(datetime.UTC)
         etag = hashlib.md5(data).hexdigest()
-        metadata = ObjectMetadata(key=key, size=len(data), last_modified=now, etag=etag, content_type=content_type)
+        final_content_type = content_type or "application/octet-stream"
+        metadata = ObjectMetadata(
+            key=key, size=len(data), last_modified=now, etag=etag, content_type=final_content_type
+        )
 
         self._objects[key] = data
         self._metadata[key] = metadata

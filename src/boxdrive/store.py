@@ -1,26 +1,10 @@
 """Abstract object store interface for S3-compatible operations."""
 
+import datetime
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
-from datetime import datetime
 
-
-class ObjectMetadata:
-    """Metadata for an object in the store."""
-
-    def __init__(
-        self,
-        key: str,
-        size: int,
-        last_modified: datetime,
-        etag: str | None = None,
-        content_type: str | None = None,
-    ):
-        self.key = key
-        self.size = size
-        self.last_modified = last_modified
-        self.etag = etag
-        self.content_type = content_type
+from .schemas import ObjectMetadata as ObjectMetadata
 
 
 class ObjectStore(ABC):
@@ -32,7 +16,7 @@ class ObjectStore(ABC):
     ) -> AsyncIterator[ObjectMetadata]:
         """List objects in the store."""
         raise NotImplementedError
-        yield ObjectMetadata(key="", size=0, last_modified=datetime.now())
+        yield ObjectMetadata(key="", size=0, last_modified=datetime.datetime.now())
 
     @abstractmethod
     async def get_object(self, key: str) -> bytes | None:

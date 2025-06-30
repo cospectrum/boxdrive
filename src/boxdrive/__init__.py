@@ -2,7 +2,7 @@
 
 __version__ = "0.0.1"
 
-from .app import create_app
+from .create_app import create_app
 from .memory_store import MemoryStore
 from .store import ObjectMetadata, ObjectStore
 

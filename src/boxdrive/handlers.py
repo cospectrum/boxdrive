@@ -1,13 +1,14 @@
 """S3-compatible API handlers for BoxDrive."""
 
+import datetime
 import hashlib
 import xml.etree.ElementTree as ET
 from collections.abc import AsyncIterator
-from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import StreamingResponse
 
+from .schemas import BucketName, ContentType, Key, MaxKeys
 from .store import ObjectStore
 
 router = APIRouter()
@@ -25,10 +26,10 @@ async def root() -> dict[str, str]:
 
 @router.get("/{bucket}")
 async def list_objects(
-    bucket: str,
-    prefix: str | None = Query(None),
+    bucket: BucketName,
+    prefix: Key | None = Query(None),
     delimiter: str | None = Query(None),
-    max_keys: int | None = Query(1000),
+    max_keys: MaxKeys | None = Query(1000),
     continuation_token: str | None = Query(None),
     start_after: str | None = Query(None),
     store: ObjectStore = Depends(get_store),
@@ -83,8 +84,8 @@ async def list_objects(
 
 @router.get("/{bucket}/{key:path}")
 async def get_object(
-    bucket: str,
-    key: str,
+    bucket: BucketName,
+    key: Key,
     range_header: str | None = Header(None, alias="Range"),
     store: ObjectStore = Depends(get_store),
 ) -> StreamingResponse:
@@ -117,9 +118,9 @@ async def get_object(
 
         headers: dict[str, str] = {
             "Content-Length": str(len(data)),
-            "ETag": f'"{metadata.etag}"' if metadata.etag else "",
+            "ETag": f'"{metadata.etag}"',
             "Last-Modified": metadata.last_modified.strftime("%a, %d %b %Y %H:%M:%S GMT"),
-            "Content-Type": metadata.content_type or "application/octet-stream",
+            "Content-Type": metadata.content_type,
             "Accept-Ranges": "bytes",
         }
 
@@ -131,7 +132,7 @@ async def get_object(
 
         return StreamingResponse(
             generate(),
-            media_type=metadata.content_type or "application/octet-stream",
+            media_type=metadata.content_type,
             headers=headers,
             status_code=status_code,
         )
@@ -142,7 +143,7 @@ async def get_object(
 
 
 @router.head("/{bucket}/{key:path}")
-async def head_object(bucket: str, key: str, store: ObjectStore = Depends(get_store)) -> Response:
+async def head_object(bucket: BucketName, key: Key, store: ObjectStore = Depends(get_store)) -> Response:
     try:
         metadata = await store.head_object(key)
         if not metadata:
@@ -152,9 +153,9 @@ async def head_object(bucket: str, key: str, store: ObjectStore = Depends(get_st
             status_code=200,
             headers={
                 "Content-Length": str(metadata.size),
-                "ETag": f'"{metadata.etag}"' if metadata.etag else "",
+                "ETag": f'"{metadata.etag}"',
                 "Last-Modified": metadata.last_modified.strftime("%a, %d %b %Y %H:%M:%S GMT"),
-                "Content-Type": metadata.content_type or "application/octet-stream",
+                "Content-Type": metadata.content_type,
                 "Accept-Ranges": "bytes",
             },
         )
@@ -166,10 +167,10 @@ async def head_object(bucket: str, key: str, store: ObjectStore = Depends(get_st
 
 @router.put("/{bucket}/{key:path}")
 async def put_object(
-    bucket: str,
-    key: str,
+    bucket: BucketName,
+    key: Key,
     file: UploadFile = File(...),
-    content_type: str | None = None,
+    content_type: ContentType | None = None,
     store: ObjectStore = Depends(get_store),
 ) -> Response:
     try:
@@ -183,7 +184,7 @@ async def put_object(
 
 
 @router.delete("/{bucket}/{key:path}")
-async def delete_object(bucket: str, key: str, store: ObjectStore = Depends(get_store)) -> Response:
+async def delete_object(bucket: BucketName, key: Key, store: ObjectStore = Depends(get_store)) -> Response:
     try:
         success = await store.delete_object(key)
         if not success:
@@ -204,21 +205,23 @@ async def delete_object(bucket: str, key: str, store: ObjectStore = Depends(get_
 
 
 @router.post("/{bucket}")
-async def create_bucket(bucket: str, store: ObjectStore = Depends(get_store)) -> Response:
+async def create_bucket(bucket: BucketName, store: ObjectStore = Depends(get_store)) -> Response:
     return Response(status_code=200, headers={"Location": f"/{bucket}"})
 
 
 @router.delete("/{bucket}")
-async def delete_bucket(bucket: str, store: ObjectStore = Depends(get_store)) -> Response:
+async def delete_bucket(bucket: BucketName, store: ObjectStore = Depends(get_store)) -> Response:
     return Response(status_code=204)
 
 
 @router.post("/{bucket}/{key:path}")
 async def initiate_multipart_upload(
-    bucket: str, key: str, uploads: str | None = Query(None), store: ObjectStore = Depends(get_store)
+    bucket: BucketName, key: Key, uploads: str | None = Query(None), store: ObjectStore = Depends(get_store)
 ) -> Response:
     if uploads:
-        upload_id = f"upload-{hashlib.md5(f'{bucket}-{key}-{datetime.now(UTC)}'.encode()).hexdigest()}"
+        upload_string = f"{bucket}-{key}-{datetime.datetime.now()}"
+        upload_hash = hashlib.md5(upload_string.encode()).hexdigest()
+        upload_id = f"upload-{upload_hash}"
 
         root = ET.Element("InitiateMultipartUploadResult", xmlns="http://s3.amazonaws.com/doc/2006-03-01/")
         ET.SubElement(root, "Bucket").text = bucket

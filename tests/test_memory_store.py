@@ -20,12 +20,9 @@ async def test_put_and_get_object(store: MemoryStore) -> None:
     content_type = "text/plain"
 
     etag = await store.put_object(key, data, content_type)
-    assert etag is not None
-
     retrieved_data = await store.get_object(key)
     assert retrieved_data == data
 
-    # Check metadata
     metadata = await store.head_object(key)
     assert metadata is not None
     assert metadata.key == key
@@ -71,7 +68,6 @@ async def test_list_objects(store: MemoryStore) -> None:
     for key, data in objects:
         await store.put_object(key, data)
 
-    # List all objects
     all_objects = []
     async for obj in store.list_objects():
         all_objects.append(obj.key)
