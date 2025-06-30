@@ -38,7 +38,7 @@ jobs:
         run: uv run fastapi dev src/boxdrive/main.py --port 8000 &
       - name: Wait for API server to be ready
         run: |
-          for i in {1..10}; do
+          for _ in {1..10}; do
             curl -sSf http://127.0.0.1:8000/ && exit 0
             sleep 1
           done
