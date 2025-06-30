@@ -1,5 +1,3 @@
-"""End-to-end tests using boto3 to verify S3 compatibility."""
-
 import os
 from typing import Any
 
@@ -12,7 +10,6 @@ BotoClient = Any
 
 @pytest.fixture
 def _s3_client() -> BotoClient:
-    """Create a boto3 S3 client."""
     endpoint_url = os.getenv("S3_ENDPOINT_URL")
     return boto3.client(
         "s3",
@@ -29,125 +26,87 @@ def s3_client(_s3_client: BotoClient) -> BotoClient:
     buckets = _s3_client.list_buckets()
     for bucket in buckets["Buckets"]:
         _s3_client.delete_bucket(Bucket=bucket["Name"])
-
     buckets = _s3_client.list_buckets()["Buckets"]
     assert len(buckets) == 0
     return _s3_client
 
 
-def test_boto_list_buckets(s3_client: BotoClient) -> None:
-    """Test listing buckets using boto3."""
-    s3_client.create_bucket(Bucket="test-bucket-1")
-    s3_client.create_bucket(Bucket="test-bucket-2")
-
-    response = s3_client.list_buckets()
-    bucket_names = [bucket["Name"] for bucket in response["Buckets"]]
-    assert "test-bucket-1" in bucket_names
-    assert "test-bucket-2" in bucket_names
+def test_create_and_list_bucket(s3_client: BotoClient) -> None:
+    bucket = "e2e-bucket"
+    s3_client.create_bucket(Bucket=bucket)
+    buckets = s3_client.list_buckets()["Buckets"]
+    names = [b["Name"] for b in buckets]
+    assert bucket in names
 
 
-def test_boto_put_and_get_object(s3_client: BotoClient) -> None:
-    """Test putting and getting objects using boto3."""
-    bucket_name = "test-boto-bucket"
-    key = "test-file.txt"
-    content = b"Hello from boto3!"
-
-    s3_client.create_bucket(Bucket=bucket_name)
-
-    s3_client.put_object(Bucket=bucket_name, Key=key, Body=content, ContentType="text/plain")
-
-    response = s3_client.get_object(Bucket=bucket_name, Key=key)
-    retrieved_content = response["Body"].read()
-
-    assert retrieved_content == content
-    assert response["ContentType"] == "text/plain"
-
-    """Test listing objects using boto3."""
-    bucket_name = "test-list-bucket"
-
-    s3_client.create_bucket(Bucket=bucket_name)
-    s3_client.put_object(Bucket=bucket_name, Key="file1.txt", Body=b"content1", ContentType="text/plain")
-    s3_client.put_object(Bucket=bucket_name, Key="file2.txt", Body=b"content2", ContentType="text/plain")
-    s3_client.put_object(Bucket=bucket_name, Key="folder/file3.txt", Body=b"content3", ContentType="text/plain")
-
-    response = s3_client.list_objects_v2(Bucket=bucket_name)
-
-    keys = [obj["Key"] for obj in response["Contents"]]
-    assert "file1.txt" in keys
-    assert "file2.txt" in keys
-    assert "folder/file3.txt" in keys
+def test_put_and_get_object(s3_client: BotoClient) -> None:
+    bucket = "e2e-bucket"
+    key = "file.txt"
+    content = b"e2e content"
+    s3_client.create_bucket(Bucket=bucket)
+    s3_client.put_object(Bucket=bucket, Key=key, Body=content, ContentType="text/plain")
+    obj = s3_client.get_object(Bucket=bucket, Key=key)
+    assert obj["Body"].read() == content
+    assert obj["ContentType"] == "text/plain"
 
 
-def test_boto_head_object(s3_client: BotoClient) -> None:
-    """Test head object operation using boto3."""
-    bucket_name = "test-head-bucket"
-    key = "test-head-file.txt"
-    content = b"Test content for head operation"
-
-    s3_client.create_bucket(Bucket=bucket_name)
-    s3_client.put_object(Bucket=bucket_name, Key=key, Body=content, ContentType="text/plain")
-
-    response = s3_client.head_object(Bucket=bucket_name, Key=key)
-    assert response["ContentLength"] == len(content)
-    assert response["ContentType"] == "text/plain"
-    assert "ETag" in response
+def test_list_objects(s3_client: BotoClient) -> None:
+    bucket = "e2e-bucket"
+    s3_client.create_bucket(Bucket=bucket)
+    s3_client.put_object(Bucket=bucket, Key="a.txt", Body=b"a")
+    s3_client.put_object(Bucket=bucket, Key="b.txt", Body=b"b")
+    resp = s3_client.list_objects(Bucket=bucket)
+    keys = [obj["Key"] for obj in resp["Contents"]]
+    assert set(keys) == {"a.txt", "b.txt"}
 
 
-def test_boto_delete_object(s3_client: BotoClient) -> None:
-    """Test deleting objects using boto3."""
-    bucket_name = "test-delete-bucket"
-    key = "test-delete-file.txt"
-
-    s3_client.create_bucket(Bucket=bucket_name)
-    s3_client.put_object(Bucket=bucket_name, Key=key, Body=b"content", ContentType="text/plain")
-
-    s3_client.head_object(Bucket=bucket_name, Key=key)
-
-    s3_client.delete_object(Bucket=bucket_name, Key=key)
-
-    with pytest.raises(Exception):  # missing object
-        s3_client.head_object(Bucket=bucket_name, Key=key)
+def test_head_object(s3_client: BotoClient) -> None:
+    bucket = "e2e-bucket"
+    key = "head.txt"
+    content = b"head content"
+    s3_client.create_bucket(Bucket=bucket)
+    s3_client.put_object(Bucket=bucket, Key=key, Body=content, ContentType="text/plain")
+    meta = s3_client.head_object(Bucket=bucket, Key=key)
+    assert meta["ContentLength"] == len(content)
+    assert meta["ContentType"] == "text/plain"
+    assert "ETag" in meta
 
 
-def test_boto_range_request(s3_client: BotoClient) -> None:
-    """Test range requests using boto3."""
-    bucket_name = "test-range-bucket"
-    key = "test-range-file.txt"
-    content = b"Hello World! This is a test file for range requests."
-
-    s3_client.create_bucket(Bucket=bucket_name)
-    s3_client.put_object(Bucket=bucket_name, Key=key, Body=content, ContentType="text/plain")
-
-    response = s3_client.get_object(Bucket=bucket_name, Key=key, Range="bytes=0-4")
-
-    retrieved_content = response["Body"].read()
-    assert retrieved_content == b"Hello"
-    assert response["ContentRange"] == f"bytes 0-4/{len(content)}"
+def test_delete_object(s3_client: BotoClient) -> None:
+    bucket = "e2e-bucket"
+    key = "del.txt"
+    s3_client.create_bucket(Bucket=bucket)
+    s3_client.put_object(Bucket=bucket, Key=key, Body=b"del")
+    s3_client.delete_object(Bucket=bucket, Key=key)
+    with pytest.raises(Exception):
+        s3_client.head_object(Bucket=bucket, Key=key)
 
 
-def test_boto_create_bucket(s3_client: BotoClient) -> None:
-    """Test creating buckets using boto3."""
-    bucket_name = "new-boto-bucket"
-
-    _ = s3_client.create_bucket(Bucket=bucket_name)
-
-    buckets_response = s3_client.list_buckets()
-    bucket_names = [bucket["Name"] for bucket in buckets_response["Buckets"]]
-    assert bucket_name in bucket_names
+def test_delete_bucket(s3_client: BotoClient) -> None:
+    bucket = "e2e-bucket"
+    s3_client.create_bucket(Bucket=bucket)
+    s3_client.delete_bucket(Bucket=bucket)
+    buckets = s3_client.list_buckets()["Buckets"]
+    names = [b["Name"] for b in buckets]
+    assert bucket not in names
 
 
-def test_boto_delete_bucket(s3_client: BotoClient) -> None:
-    """Test deleting buckets using boto3."""
-    bucket_name = "delete-boto-bucket"
+def test_get_object_range(s3_client: BotoClient) -> None:
+    bucket = "e2e-bucket"
+    key = "range.txt"
+    content = b"0123456789"
+    s3_client.create_bucket(Bucket=bucket)
+    s3_client.put_object(Bucket=bucket, Key=key, Body=content, ContentType="text/plain")
+    resp = s3_client.get_object(Bucket=bucket, Key=key, Range="bytes=2-5")
+    assert resp["Body"].read() == b"2345"
+    assert resp["ContentRange"] == f"bytes 2-5/{len(content)}"
 
-    s3_client.create_bucket(Bucket=bucket_name)
 
-    buckets_response = s3_client.list_buckets()
-    bucket_names = [bucket["Name"] for bucket in buckets_response["Buckets"]]
-    assert bucket_name in bucket_names
-
-    s3_client.delete_bucket(Bucket=bucket_name)
-
-    buckets_response = s3_client.list_buckets()
-    bucket_names = [bucket["Name"] for bucket in buckets_response["Buckets"]]
-    assert bucket_name not in bucket_names
+def test_list_objects_with_prefix(s3_client: BotoClient) -> None:
+    bucket = "e2e-bucket"
+    s3_client.create_bucket(Bucket=bucket)
+    s3_client.put_object(Bucket=bucket, Key="foo/a.txt", Body=b"a")
+    s3_client.put_object(Bucket=bucket, Key="foo/b.txt", Body=b"b")
+    resp = s3_client.list_objects(Bucket=bucket, Prefix="foo/")
+    keys = [obj["Key"] for obj in resp["Contents"]]
+    assert set(keys) == {"foo/a.txt", "foo/b.txt"}
