@@ -4,6 +4,8 @@ from collections.abc import AsyncIterator
 from fastapi import HTTPException, Response
 from fastapi.responses import StreamingResponse
 
+from boxdrive.schemas.store import ListObjectsInfo
+
 from . import constants, exceptions
 from .schemas import BucketName, ContentType, Key, MaxKeys
 from .schemas.xml import (
@@ -31,6 +33,35 @@ class S3:
         buckets_model = BucketsXml(Bucket=buckets_xml)
         return ListAllMyBucketsResultXml(Owner=owner, Buckets=buckets_model)
 
+    async def list_objects_v2(
+        self,
+        bucket: BucketName,
+        prefix: Key | None = None,
+        delimiter: str | None = None,
+        max_keys: MaxKeys = 1000,
+        continuation_token: Key | None = None,
+        start_after: Key | None = None,
+    ) -> ListBucketResultXml:
+        try:
+            objects_info = await self.store.list_objects_v2(
+                bucket,
+                prefix=prefix,
+                delimiter=delimiter,
+                max_keys=max_keys,
+                continuation_token=continuation_token,
+                start_after=start_after,
+            )
+            return self._build_list_bucket_result(
+                bucket,
+                objects_info,
+                prefix=prefix,
+                delimiter=delimiter,
+                max_keys=max_keys,
+            )
+        except exceptions.NoSuchBucket:
+            logger.info("Bucket %s not found", bucket)
+            raise HTTPException(status_code=404, detail="The specified bucket does not exist.")
+
     async def list_objects(
         self,
         bucket: BucketName,
@@ -39,15 +70,30 @@ class S3:
         max_keys: MaxKeys = 1000,
         marker: Key | None = None,
     ) -> ListBucketResultXml:
-        objects: list[ContentsXml] = []
         try:
             objects_info = await self.store.list_objects(
                 bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker
+            )
+            return self._build_list_bucket_result(
+                bucket,
+                objects_info,
+                prefix=prefix,
+                delimiter=delimiter,
+                max_keys=max_keys,
             )
         except exceptions.NoSuchBucket:
             logger.info("Bucket %s not found", bucket)
             raise HTTPException(status_code=404, detail="The specified bucket does not exist.")
 
+    def _build_list_bucket_result(
+        self,
+        bucket: BucketName,
+        objects_info: ListObjectsInfo,
+        prefix: Key | None = None,
+        delimiter: str | None = None,
+        max_keys: MaxKeys = 1000,
+    ) -> ListBucketResultXml:
+        objects: list[ContentsXml] = []
         for obj in objects_info.objects:
             etag = f'"{obj.etag}"' if obj.etag else ""
             objects.append(

@@ -47,6 +47,21 @@ class ObjectStore(ABC):
         pass
 
     @abstractmethod
+    async def list_objects_v2(
+        self,
+        bucket_name: BucketName,
+        *,
+        continuation_token: Key | None = None,
+        delimiter: str | None = None,
+        encoding_type: str | None = None,
+        max_keys: MaxKeys = 1000,
+        prefix: Key | None = None,
+        start_after: Key | None = None,
+    ) -> ListObjectsInfo:
+        """List objects in a bucket."""
+        pass
+
+    @abstractmethod
     async def get_object(self, bucket_name: BucketName, key: Key) -> Object | None:
         """Get an object by bucket and key."""
         pass
