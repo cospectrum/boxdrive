@@ -107,3 +107,6 @@ class Object(BaseModel):
 class ListObjectsInfo(BaseModel):
     objects: list[ObjectInfo]
     is_truncated: bool
+
+
+ListObjectsV2Info = ListObjectsInfo

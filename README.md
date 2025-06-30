@@ -56,6 +56,7 @@ from boxdrive import (
     ETag,
     Key,
     ListObjectsInfo,
+    ListObjectsV2Info,
     MaxKeys,
     Object,
     ObjectInfo,
@@ -91,7 +92,7 @@ class MyCustomStore(ObjectStore):
         max_keys: MaxKeys = 1000,
         prefix: Key | None = None,
         start_after: Key | None = None,
-    ) -> ListObjectsInfo: ...
+    ) -> ListObjectsV2Info: ...
 
 ```
 

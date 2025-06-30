@@ -1,4 +1,15 @@
-from .store import BucketMetadata, BucketName, ContentType, ETag, Key, ListObjectsInfo, MaxKeys, Object, ObjectInfo
+from .store import (
+    BucketMetadata,
+    BucketName,
+    ContentType,
+    ETag,
+    Key,
+    ListObjectsInfo,
+    ListObjectsV2Info,
+    MaxKeys,
+    Object,
+    ObjectInfo,
+)
 
 __all__ = [
     "BucketName",
@@ -10,4 +21,5 @@ __all__ = [
     "ObjectInfo",
     "Object",
     "ListObjectsInfo",
+    "ListObjectsV2Info",
 ]
