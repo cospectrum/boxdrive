@@ -141,33 +141,3 @@ def test_delete_bucket(client: TestClient) -> None:
 
     response = client.delete(f"/{bucket}")
     assert response.status_code == 204
-
-
-def test_initiate_multipart_upload(client: TestClient) -> None:
-    bucket = "test-bucket"
-    key = "large-file.txt"
-
-    # Test with uploads parameter (any value)
-    response = client.post(f"/{bucket}/{key}?uploads=true")
-    assert response.status_code == 200
-    assert response.headers["Content-Type"] == "application/xml"
-
-    # Parse XML response
-    import xml.etree.ElementTree as ET
-
-    root = ET.fromstring(response.content.decode())
-    s3_ns = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
-
-    bucket_elem = root.find("s3:Bucket", s3_ns)
-    key_elem = root.find("s3:Key", s3_ns)
-    upload_id_elem = root.find("s3:UploadId", s3_ns)
-
-    assert bucket_elem is not None and bucket_elem.text == bucket
-    assert key_elem is not None and key_elem.text == key
-    assert upload_id_elem is not None
-    assert upload_id_elem.text is not None
-    assert upload_id_elem.text.startswith("upload-")
-
-    # Test without uploads parameter
-    response = client.post(f"/{bucket}/{key}")
-    assert response.status_code == 200

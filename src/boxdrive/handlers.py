@@ -1,7 +1,5 @@
 """S3-compatible API handlers for BoxDrive."""
 
-import datetime
-import hashlib
 import xml.etree.ElementTree as ET
 from collections.abc import AsyncIterator
 
@@ -212,24 +210,3 @@ async def create_bucket(bucket: BucketName, store: ObjectStore = Depends(get_sto
 @router.delete("/{bucket}")
 async def delete_bucket(bucket: BucketName, store: ObjectStore = Depends(get_store)) -> Response:
     return Response(status_code=204)
-
-
-@router.post("/{bucket}/{key:path}")
-async def initiate_multipart_upload(
-    bucket: BucketName, key: Key, uploads: str | None = Query(None), store: ObjectStore = Depends(get_store)
-) -> Response:
-    if uploads:
-        upload_string = f"{bucket}-{key}-{datetime.datetime.now()}"
-        upload_hash = hashlib.md5(upload_string.encode()).hexdigest()
-        upload_id = f"upload-{upload_hash}"
-
-        root = ET.Element("InitiateMultipartUploadResult", xmlns="http://s3.amazonaws.com/doc/2006-03-01/")
-        ET.SubElement(root, "Bucket").text = bucket
-        ET.SubElement(root, "Key").text = key
-        ET.SubElement(root, "UploadId").text = upload_id
-
-        xml_str = ET.tostring(root, encoding="unicode")
-
-        return Response(content=xml_str, media_type="application/xml")
-
-    return Response(status_code=200)
