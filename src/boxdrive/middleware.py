@@ -18,8 +18,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         query_params = request.url.query
         logger.info(
-            "Request info",
-            extra={
+            "Request info: %s",
+            {
                 "method": method,
                 "path": path,
                 "query_params": query_params,
@@ -35,8 +35,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         status_code = response.status_code
         content_length = response.headers.get("content-length", "unknown")
         logger.info(
-            "Response info",
-            extra={
+            "Response info: %s",
+            {
                 "method": method,
                 "path": path,
                 "status_code": status_code,
@@ -55,12 +55,13 @@ class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
         except Exception as exc:
-            logger.exception(f"Unhandled exception in {request.method} {request.url}")
+            logger.exception("internal error")
+            detail = f"Internal Server Error {type(exc)}"
             return JSONResponse(
                 status_code=500,
                 content={
                     "error": "Internal Server Error",
                     "message": "An unexpected error occurred",
-                    "detail": str(exc) if str(exc) else "Unknown error",
+                    "detail": detail,
                 },
             )

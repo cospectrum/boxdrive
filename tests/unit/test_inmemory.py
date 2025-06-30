@@ -42,13 +42,12 @@ async def test_list_objects(store: InMemoryStore) -> None:
     await store.put_object("bucket1", "a.txt", b"a")
     await store.put_object("bucket1", "b.txt", b"b")
     await store.put_object("bucket1", "folder/c.txt", b"c")
-    keys = [obj.key async for obj in store.list_objects("bucket1")]
-    assert set(keys) == {"a.txt", "b.txt", "folder/c.txt"}
-    keys = [obj.key async for obj in store.list_objects("bucket1", prefix="folder/")]
-    assert keys == ["folder/c.txt"]
+    objects = await store.list_objects("bucket1")
+    assert set(obj.key for obj in objects.objects) == {"a.txt", "b.txt", "folder/c.txt"}
+    objects = await store.list_objects("bucket1", prefix="folder/")
+    assert [obj.key for obj in objects.objects] == ["folder/c.txt"]
     with pytest.raises(NoSuchBucket):
-        async for _ in store.list_objects("no-such-bucket"):
-            pass
+        await store.list_objects("no-such-bucket")
 
 
 async def test_get_object(store: InMemoryStore) -> None:

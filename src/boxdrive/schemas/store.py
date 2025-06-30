@@ -102,3 +102,8 @@ class Object(BaseModel):
 
     data: bytes
     metadata: ObjectMetadata
+
+
+class ListObjectsInfo(BaseModel):
+    objects: list[ObjectMetadata]
+    is_truncated: bool

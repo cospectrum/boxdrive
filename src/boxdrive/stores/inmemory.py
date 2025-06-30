@@ -3,14 +3,23 @@
 import datetime
 import hashlib
 import logging
-from collections.abc import AsyncIterator
 
 from pydantic import BaseModel
 
 from boxdrive import exceptions
 
 from .. import constants
-from ..schemas import BucketMetadata, BucketName, ContentType, ETag, Key, MaxKeys, Object, ObjectMetadata
+from ..schemas import (
+    BucketMetadata,
+    BucketName,
+    ContentType,
+    ETag,
+    Key,
+    ListObjectsInfo,
+    MaxKeys,
+    Object,
+    ObjectMetadata,
+)
 from ..store import ObjectStore
 
 logger = logging.getLogger(__name__)
@@ -56,8 +65,14 @@ class InMemoryStore(ObjectStore):
             raise exceptions.NoSuchBucket
 
     async def list_objects(
-        self, bucket_name: str, prefix: Key | None = None, delimiter: str | None = None, max_keys: MaxKeys | None = None
-    ) -> AsyncIterator[ObjectMetadata]:
+        self,
+        bucket_name: str,
+        *,
+        prefix: Key | None = None,
+        delimiter: str | None = None,
+        max_keys: MaxKeys = 1000,
+        marker: Key | None = None,
+    ) -> ListObjectsInfo:
         bucket = self.buckets.get(bucket_name)
         if bucket is None:
             raise exceptions.NoSuchBucket
@@ -66,11 +81,14 @@ class InMemoryStore(ObjectStore):
         if prefix:
             objects = [obj for obj in objects if obj.key.startswith(prefix)]
 
-        if max_keys:
-            objects = objects[:max_keys]
+        objects = sorted(objects, key=lambda obj: obj.key)
+        if marker:
+            objects = [obj for obj in objects if obj.key > marker]
 
-        for obj in objects:
-            yield obj
+        is_truncated = len(objects) > max_keys
+        objects = objects[:max_keys]
+
+        return ListObjectsInfo(objects=objects, is_truncated=is_truncated)
 
     async def get_object(self, bucket_name: str, key: Key) -> Object | None:
         """Get an object by bucket and key."""

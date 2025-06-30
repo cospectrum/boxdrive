@@ -36,30 +36,35 @@ class S3:
         bucket: BucketName,
         prefix: Key | None = None,
         delimiter: str | None = None,
-        max_keys: MaxKeys | None = 1000,
+        max_keys: MaxKeys = 1000,
+        marker: Key | None = None,
     ) -> ListBucketResultXml:
         objects: list[ContentsXml] = []
         try:
-            async for obj in self.store.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys):
-                etag = f'"{obj.etag}"' if obj.etag else ""
-                objects.append(
-                    ContentsXml(
-                        Key=obj.key,
-                        LastModified=obj.last_modified.isoformat(),
-                        ETag=etag,
-                        Size=obj.size,
-                        StorageClass=constants.DEFAULT_STORAGE_CLASS,
-                        Owner=OwnerShortXml(ID=constants.OWNER_ID, DisplayName=constants.OWNER_DISPLAY_NAME),
-                    )
-                )
+            objects_info = await self.store.list_objects(
+                bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker
+            )
         except exceptions.NoSuchBucket:
             logger.info("Bucket %s not found", bucket)
             raise HTTPException(status_code=404, detail="The specified bucket does not exist.")
+
+        for obj in objects_info.objects:
+            etag = f'"{obj.etag}"' if obj.etag else ""
+            objects.append(
+                ContentsXml(
+                    Key=obj.key,
+                    LastModified=obj.last_modified.isoformat(),
+                    ETag=etag,
+                    Size=obj.size,
+                    StorageClass=constants.DEFAULT_STORAGE_CLASS,
+                    Owner=OwnerShortXml(ID=constants.OWNER_ID, DisplayName=constants.OWNER_DISPLAY_NAME),
+                )
+            )
         return ListBucketResultXml(
             Name=bucket,
             Prefix=prefix or "",
-            MaxKeys=max_keys or 1000,
-            IsTruncated="false",
+            MaxKeys=max_keys,
+            IsTruncated=str(objects_info.is_truncated).lower(),
             Delimiter=delimiter,
             Contents=objects,
         )

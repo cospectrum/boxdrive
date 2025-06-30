@@ -1,8 +1,6 @@
 """Abstract object store interface for S3-compatible operations."""
 
-import datetime
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterator
 
 from .schemas import (
     BucketMetadata,
@@ -10,6 +8,7 @@ from .schemas import (
     ContentType,
     ETag,
     Key,
+    ListObjectsInfo,
     MaxKeys,
     Object,
     ObjectMetadata,
@@ -38,15 +37,14 @@ class ObjectStore(ABC):
     async def list_objects(
         self,
         bucket_name: BucketName,
+        *,
         prefix: Key | None = None,
         delimiter: str | None = None,
-        max_keys: MaxKeys | None = None,
-    ) -> AsyncIterator[ObjectMetadata]:
+        max_keys: MaxKeys = 1000,
+        marker: Key | None = None,
+    ) -> ListObjectsInfo:
         """List objects in a bucket."""
-        raise NotImplementedError
-        yield ObjectMetadata(
-            key="", size=0, last_modified=datetime.datetime.now(datetime.UTC), etag="", content_type=""
-        )
+        pass
 
     @abstractmethod
     async def get_object(self, bucket_name: BucketName, key: Key) -> Object | None:

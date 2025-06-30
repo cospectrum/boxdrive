@@ -34,10 +34,11 @@ async def list_objects(
     bucket: BucketName,
     prefix: Key | None = Query(None),
     delimiter: str | None = Query(None),
-    max_keys: MaxKeys | None = Query(1000),
+    max_keys: MaxKeys = Query(1000, alias="max-keys"),
+    marker: Key | None = Query(None),
     s3: S3 = Depends(get_s3),
 ) -> XMLResponse:
-    objects = await s3.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys)
+    objects = await s3.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker)
     return XMLResponse(objects)
 
 
