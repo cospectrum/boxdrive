@@ -5,8 +5,9 @@ import logging
 from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
 
-from .s3 import S3, XMLResponse
+from .s3 import S3
 from .schemas import BucketName, ContentType, Key, MaxKeys
+from .schemas.xml import XMLResponse
 from .store import ObjectStore
 
 router = APIRouter()
