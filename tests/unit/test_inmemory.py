@@ -61,10 +61,10 @@ async def test_get_object(store: InMemoryStore) -> None:
 
 
 async def test_put_object(store: InMemoryStore) -> None:
-    etag = await store.put_object("bucket1", "key1", b"data", "text/plain")
-    assert isinstance(etag, str)
+    info = await store.put_object("bucket1", "key1", b"data", "text/plain")
     obj = await store.get_object("bucket1", "key1")
     assert obj is not None
+    assert info.etag == obj.info.etag
     assert obj.data == b"data"
     assert obj.info.content_type == "text/plain"
 

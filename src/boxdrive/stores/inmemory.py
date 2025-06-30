@@ -13,7 +13,6 @@ from ..schemas import (
     BucketInfo,
     BucketName,
     ContentType,
-    ETag,
     Key,
     ListObjectsInfo,
     MaxKeys,
@@ -128,7 +127,7 @@ class InMemoryStore(ObjectStore):
 
     async def put_object(
         self, bucket_name: str, key: Key, data: bytes, content_type: ContentType | None = None
-    ) -> ETag:
+    ) -> ObjectInfo:
         """Put an object into a bucket."""
         if bucket_name not in self.buckets:
             await self.create_bucket(bucket_name)
@@ -141,17 +140,17 @@ class InMemoryStore(ObjectStore):
 
         bucket = self.buckets.get(bucket_name)
         if bucket is None:
-            return etag
+            return info
         bucket.objects[key] = obj
-        return etag
+        return info
 
-    async def delete_object(self, bucket_name: str, key: Key) -> None:
+    async def delete_object(self, bucket_name: str, key: Key) -> ObjectInfo:
         """Delete an object from a bucket."""
         bucket = self.buckets.get(bucket_name)
         if bucket is None:
             raise exceptions.NoSuchBucket
         try:
-            del bucket.objects[key]
+            return bucket.objects.pop(key).info
         except KeyError:
             raise exceptions.NoSuchKey
 
