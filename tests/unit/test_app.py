@@ -4,7 +4,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from boxdrive import MemoryStore, constants, create_app
+from boxdrive import constants, create_app
+from boxdrive.stores import MemoryStore
 
 
 @pytest.fixture
@@ -162,18 +163,15 @@ def test_list_buckets_and_create_bucket(client: TestClient) -> None:
     assert owner_id is not None and owner_id.text == constants.OWNER_ID
     assert owner_display_name is not None and owner_display_name.text == constants.OWNER_DISPLAY_NAME
 
-    # Check buckets element exists but is empty initially
     buckets = root.find("s3:Buckets", s3_ns)
     assert buckets is not None
     bucket_list = buckets.findall("s3:Bucket", s3_ns)
     assert len(bucket_list) == 0
 
-    # Create a bucket
     bucket_name = "test-bucket-for-listing"
     response = client.put(f"/{bucket_name}")
     assert response.status_code == 200
 
-    # List buckets again - should now show the created bucket
     response = client.get("/")
     assert response.status_code == 200
 

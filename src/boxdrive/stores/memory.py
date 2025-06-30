@@ -4,9 +4,9 @@ import datetime
 import hashlib
 from collections.abc import AsyncIterator
 
-from . import constants
-from .schemas import Bucket, BucketMetadata, BucketName, ContentType, ETag, Key, MaxKeys, Object, ObjectMetadata
-from .store import ObjectStore
+from .. import constants
+from ..schemas import Bucket, BucketMetadata, BucketName, ContentType, ETag, Key, MaxKeys, Object, ObjectMetadata
+from ..store import ObjectStore
 
 
 class MemoryStore(ObjectStore):

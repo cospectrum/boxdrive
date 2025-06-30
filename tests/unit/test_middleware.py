@@ -6,7 +6,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from boxdrive import MemoryStore, create_app
+from boxdrive import create_app
+from boxdrive.stores import MemoryStore
 
 
 @pytest.fixture

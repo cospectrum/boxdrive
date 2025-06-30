@@ -2,7 +2,7 @@
 
 import pytest
 
-from boxdrive.memory_store import MemoryStore
+from boxdrive.stores import MemoryStore
 
 
 @pytest.fixture
@@ -10,11 +10,9 @@ async def store() -> MemoryStore:
     return MemoryStore()
 
 
-BUCKET = "test-bucket"
-
-
-@pytest.mark.asyncio
 async def test_put_and_get_object(store: MemoryStore) -> None:
+    BUCKET = "test-bucket"
+
     key = "test.txt"
     data = b"Hello, World!"
     content_type = "text/plain"
@@ -30,8 +28,9 @@ async def test_put_and_get_object(store: MemoryStore) -> None:
     assert metadata.etag == etag
 
 
-@pytest.mark.asyncio
 async def test_delete_object(store: MemoryStore) -> None:
+    BUCKET = "test-bucket"
+
     key = "test.txt"
     data = b"Hello, World!"
     await store.create_bucket(BUCKET)
@@ -41,8 +40,9 @@ async def test_delete_object(store: MemoryStore) -> None:
     assert await store.get_object(BUCKET, key) is None
 
 
-@pytest.mark.asyncio
 async def test_list_objects(store: MemoryStore) -> None:
+    BUCKET = "test-bucket"
+
     await store.create_bucket(BUCKET)
     objects = [
         ("file1.txt", b"content1"),
@@ -65,7 +65,6 @@ async def test_list_objects(store: MemoryStore) -> None:
     assert "folder/file3.txt" in folder_objects
 
 
-@pytest.mark.asyncio
 async def test_list_buckets_and_create_bucket(store: MemoryStore) -> None:
     buckets = await store.list_buckets()
     assert len(buckets) == 0

@@ -1,69 +1,45 @@
 # BoxDrive
 
-A generic object store with S3-compatible API built with FastAPI.
-
-## Features
-
-- **S3-compatible API**: Supports standard S3 operations (GET, PUT, DELETE, HEAD, LIST)
-- **Abstract Object Store**: Pluggable storage backends through the `ObjectStore` interface
-- **FastAPI-based**: Modern, fast web framework with automatic API documentation
-- **Async-first**: Built with async/await for high performance
-- **Type-safe**: Full type hints and mypy support
+S3-compatible API with an **Abstract Object Store** in Python.
+Work in progress.
 
 ## Installation
 
 ```bash
-# Using uv (recommended)
-uv sync
-
-# Or using pip
-pip install -e .
+uv add boxdrive
 ```
 
 ## Quick Start
 
 ### Basic Usage
 
+create `main.py`:
 ```python
-import asyncio
-import uvicorn
-from boxdrive import create_app, MemoryStore
+from boxdrive import create_app
+from boxdrive.stores import MemoryStore
 
-async def main():
-    # Create an in-memory store
-    store = MemoryStore()
-    
-    # Create the FastAPI app
-    app = create_app(store)
-    
-    # Run the server
-    config = uvicorn.Config(app, host="0.0.0.0", port=8000)
-    server = uvicorn.Server(config)
-    await server.serve()
-
-if __name__ == "__main__":
-    asyncio.run(main())
+store = MemoryStore()
+app = create_app(store)
 ```
 
-### Running the Example
-
+start API in dev mode:
 ```bash
-python examples/basic_usage.py
+fastapi dev main.py
 ```
-
 The API will be available at `http://localhost:8000` with automatic documentation at `http://localhost:8000/docs`.
 
 ## API Endpoints
 
 The API provides S3-compatible endpoints:
 
+- `GET /` - List buckets
+- `PUT /{bucket}` - Create a bucket
+- `DELETE /{bucket}` - Delete a bucket
 - `GET /{bucket}` - List objects in a bucket
 - `GET /{bucket}/{key}` - Get an object
 - `PUT /{bucket}/{key}` - Put an object
 - `DELETE /{bucket}/{key}` - Delete an object
 - `HEAD /{bucket}/{key}` - Get object metadata
-- `POST /{bucket}` - Create a bucket
-- `DELETE /{bucket}` - Delete a bucket
 
 ## Creating Custom Object Stores
 
@@ -74,46 +50,63 @@ from boxdrive import ObjectStore, ObjectMetadata
 from typing import AsyncIterator, Optional
 
 class MyCustomStore(ObjectStore):
-    async def list_objects(self, prefix=None, delimiter=None, max_keys=None):
-        # Implement object listing
+    async def list_buckets(self) -> list[dict]:
         pass
-    
-    async def get_object(self, key: str) -> Optional[bytes]:
-        # Implement object retrieval
+
+    async def create_bucket(self, bucket_name: str) -> bool:
         pass
-    
-    async def put_object(self, key: str, data: bytes, content_type=None) -> str:
-        # Implement object storage
+
+    async def delete_bucket(self, bucket_name: str) -> bool:
         pass
-    
-    # ... implement other required methods
+
+    async def list_objects(
+        self,
+        bucket_name: str,
+        prefix: Optional[str] = None,
+        delimiter: Optional[str] = None,
+        max_keys: Optional[int] = None,
+    ) -> AsyncIterator[ObjectMetadata]:
+        pass
+
+    async def get_object(self, bucket_name: str, key: str) -> Optional[bytes]:
+        pass
+
+    async def put_object(
+        self, bucket_name: str, key: str, data: bytes, content_type: Optional[str] = None
+    ) -> str:
+        pass
+
+    async def delete_object(self, bucket_name: str, key: str) -> bool:
+        pass
+
+    async def head_object(self, bucket_name: str, key: str) -> Optional[ObjectMetadata]:
+        pass
 ```
 
 ## Development
 
 ### Running Tests
 
+unit:
 ```bash
-# Using uv
-uv run pytest
+uv run pytest/unit
+```
+e2e:
+```bash
+uv run fastapi dev src/boxdrive/main.py --port 8000
+export S3_ENDPOINT_URL=http://127.0.0.1:8000
 
-# Or using pytest directly
-pytest
+uv run run pytest/e2e
 ```
 
 ### Code Quality
 
 ```bash
-# Format code
 uv run ruff format .
-
-# Lint code
-uv run ruff check .
-
-# Type checking
-uv run mypy src/
+uv run ruff check . --fix
+uv run mypy .
 ```
 
 ## License
 
-MIT License - see LICENSE file for details.
+Apache 2.0 - see [LICENSE](./LICENSE) file for details.
