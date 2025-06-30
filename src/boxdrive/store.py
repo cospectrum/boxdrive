@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 
 from .schemas import (
-    BucketMetadata,
+    BucketInfo,
     BucketName,
     ContentType,
     ETag,
@@ -19,7 +19,7 @@ class ObjectStore(ABC):
     """Abstract base class for object store implementations."""
 
     @abstractmethod
-    async def list_buckets(self) -> list[BucketMetadata]:
+    async def list_buckets(self) -> list[BucketInfo]:
         """List all buckets in the store."""
         pass
 

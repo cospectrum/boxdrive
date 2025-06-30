@@ -51,7 +51,7 @@ To create a custom object store implementation, inherit from `ObjectStore`:
 
 ```python
 from boxdrive import (
-    BucketMetadata,
+    BucketInfo,
     ContentType,
     ETag,
     Key,
@@ -64,7 +64,7 @@ from boxdrive import (
 )
 
 class MyCustomStore(ObjectStore):
-    async def list_buckets(self) -> list[BucketMetadata]: ...
+    async def list_buckets(self) -> list[BucketInfo]: ...
     async def create_bucket(self, bucket_name: str) -> None: ...
     async def delete_bucket(self, bucket_name: str) -> None: ...
     async def get_object(self, bucket_name: str, key: str) -> Object | None: ...

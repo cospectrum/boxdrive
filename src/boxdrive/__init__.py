@@ -3,7 +3,7 @@
 from . import exceptions, stores
 from .create_app import create_app
 from .schemas import (
-    BucketMetadata,
+    BucketInfo,
     BucketName,
     ContentType,
     ETag,
@@ -24,7 +24,7 @@ __all__ = [
     "create_app",
     "ObjectStore",
     "ObjectInfo",
-    "BucketMetadata",
+    "BucketInfo",
     "Object",
     "ListObjectsInfo",
     "ListObjectsV2Info",

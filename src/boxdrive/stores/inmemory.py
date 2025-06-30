@@ -10,7 +10,7 @@ from boxdrive import exceptions
 
 from .. import constants
 from ..schemas import (
-    BucketMetadata,
+    BucketInfo,
     BucketName,
     ContentType,
     ETag,
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 class Bucket(BaseModel):
     """Represents a bucket with its objects and metadata."""
 
-    metadata: BucketMetadata
+    metadata: BucketInfo
     objects: dict[Key, "Object"]
 
 
@@ -41,7 +41,7 @@ class InMemoryStore(ObjectStore):
     def __init__(self, *, buckets: Buckets | None = None) -> None:
         self.buckets = buckets or {}
 
-    async def list_buckets(self) -> list[BucketMetadata]:
+    async def list_buckets(self) -> list[BucketInfo]:
         """List all buckets in the store."""
         return [bucket.metadata for bucket in self.buckets.values()]
 
@@ -49,7 +49,7 @@ class InMemoryStore(ObjectStore):
         """Create a new bucket in the store."""
         bucket = Bucket(
             objects={},
-            metadata=BucketMetadata(
+            metadata=BucketInfo(
                 name=bucket_name,
                 creation_date=datetime.datetime.now(datetime.UTC),
             ),

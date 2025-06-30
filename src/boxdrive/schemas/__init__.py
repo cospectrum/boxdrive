@@ -1,5 +1,5 @@
 from .store import (
-    BucketMetadata,
+    BucketInfo,
     BucketName,
     ContentType,
     ETag,
@@ -17,7 +17,7 @@ __all__ = [
     "ETag",
     "ContentType",
     "MaxKeys",
-    "BucketMetadata",
+    "BucketInfo",
     "ObjectInfo",
     "Object",
     "ListObjectsInfo",
