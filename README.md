@@ -5,7 +5,7 @@
 [github]: https://img.shields.io/badge/github-cospectrum/boxdrive-8da0cb?logo=github
 [ci]: https://github.com/cospectrum/boxdrive/workflows/ci/badge.svg
 
-S3-compatible API with an **Abstract Object Store** in Python (FastAPI).
+S3-compatible API with **Abstract Object Store** in Python (FastAPI).
 Work in progress.
 
 ## Installation
