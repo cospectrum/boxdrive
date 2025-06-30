@@ -111,6 +111,8 @@ async def get_object(
     start = 0
     end = len(data) - 1
     original_size = len(data)
+    status_code = 200
+    content_range = None
 
     if range_header:
         try:
@@ -119,9 +121,13 @@ async def get_object(
                 start_str, end_str = range_str.split("-", 1)
                 start = int(start_str) if start_str else 0
                 end = int(end_str) if end_str else len(data) - 1
+                if start > end or start >= len(data):
+                    raise ValueError
                 data = data[start : end + 1]
+                content_range = f"bytes {start}-{end}/{original_size}"
+                status_code = 206
         except (ValueError, IndexError):
-            pass
+            raise HTTPException(status_code=416, detail="Requested Range Not Satisfiable")
 
     async def generate() -> AsyncIterator[bytes]:
         yield data
@@ -134,11 +140,8 @@ async def get_object(
         "Accept-Ranges": "bytes",
     }
 
-    if range_header:
-        headers["Content-Range"] = f"bytes {start}-{end}/{original_size}"
-        status_code = 206
-    else:
-        status_code = 200
+    if content_range:
+        headers["Content-Range"] = content_range
 
     return StreamingResponse(
         generate(),

@@ -1,4 +1,4 @@
-"""Integration tests using boto3 to verify S3 compatibility."""
+"""e2e tests using boto3 to verify S3 compatibility."""
 
 import os
 from typing import Any
@@ -109,7 +109,6 @@ def test_boto_delete_object(s3_client: BotoClient) -> None:
         s3_client.head_object(Bucket=bucket_name, Key=key)
 
 
-@pytest.mark.skip("TODO")
 def test_boto_range_request(s3_client: BotoClient) -> None:
     """Test range requests using boto3."""
     bucket_name = "test-range-bucket"
@@ -123,7 +122,7 @@ def test_boto_range_request(s3_client: BotoClient) -> None:
 
     retrieved_content = response["Body"].read()
     assert retrieved_content == b"Hello"
-    assert response["ContentRange"] == "bytes 0-4/47"
+    assert response["ContentRange"] == f"bytes 0-4/{len(content)}"
 
 
 def test_boto_create_bucket(s3_client: BotoClient) -> None:
