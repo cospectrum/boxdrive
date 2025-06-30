@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+# If new code is pushed to a PR branch, then cancel in progress workflows for that PR. Ensures that
+# we don't waste CI time
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.7.14"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install the project
+        run: uv sync --all-packages --locked
+      - name: ruff format
+        run: uv run ruff format --check
+      - name: ruff check
+        run: uv run ruff check
+      - name: mypy
+        run: uv run mypy .
+      - name: pytest
+        run: uv run pytest
