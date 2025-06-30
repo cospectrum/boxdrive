@@ -1,0 +1,55 @@
+[project]
+name = "boxdrive"
+version = "0.0.1"
+description = "Generic object store with S3 compatible API"
+readme = "README.md"
+authors = [{ name = "Alex Severin", email = "severinalexeyv@gmail.com" }]
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi[standard]>=0.115.14",
+    "pydantic>=2.11.7",
+    "httpx>=0.24.0",
+]
+
+[dependency-groups]
+dev = [
+    "boto3>=1.38.46",
+    "mypy>=1.16.1",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+    "ruff>=0.12.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["botocore.*", "boto3"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "examples.custom_store"
+disable_error_code = ["empty-body"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+ignore = [
+    "E731", # lambda-assignment
+]
+extend-select = [
+    "UP", # pyupgrade
+    "I",  # isort
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
