@@ -6,7 +6,6 @@ from .schemas import (
     BucketInfo,
     BucketName,
     ContentType,
-    ETag,
     Key,
     ListObjectsInfo,
     MaxKeys,
@@ -69,13 +68,13 @@ class ObjectStore(ABC):
     @abstractmethod
     async def put_object(
         self, bucket_name: BucketName, key: Key, data: bytes, content_type: ContentType | None = None
-    ) -> ETag:
-        """Put an object into a bucket."""
+    ) -> ObjectInfo:
+        """Put an object into a bucket and return its info."""
         pass
 
     @abstractmethod
-    async def delete_object(self, bucket_name: BucketName, key: Key) -> None:
-        """Delete an object from a bucket."""
+    async def delete_object(self, bucket_name: BucketName, key: Key) -> ObjectInfo:
+        """Delete an object from a bucket and return its info."""
         pass
 
     @abstractmethod
