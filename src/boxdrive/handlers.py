@@ -1,6 +1,7 @@
 """S3-compatible API handlers for BoxDrive."""
 
 import logging
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
@@ -29,15 +30,32 @@ async def list_buckets(s3: S3 = Depends(get_s3)) -> XMLResponse:
     return XMLResponse(buckets)
 
 
+ListType = Literal["1", "2"]
+
+
 @router.get("/{bucket}")
 async def list_objects(
     bucket: BucketName,
     prefix: Key | None = Query(None),
     delimiter: str | None = Query(None),
-    max_keys: MaxKeys | None = Query(1000),
+    max_keys: MaxKeys = Query(1000, alias="max-keys"),
+    marker: Key | None = Query(None),
+    continuation_token: Key | None = Query(None, alias="continuation-token"),
+    start_after: Key | None = Query(None, alias="start-after"),
+    list_type: ListType = Query("1", alias="list-type"),
     s3: S3 = Depends(get_s3),
 ) -> XMLResponse:
-    objects = await s3.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys)
+    if list_type == "1":
+        objects = await s3.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker)
+    else:
+        objects = await s3.list_objects_v2(
+            bucket,
+            prefix=prefix,
+            delimiter=delimiter,
+            max_keys=max_keys,
+            continuation_token=continuation_token,
+            start_after=start_after,
+        )
     return XMLResponse(objects)
 
 

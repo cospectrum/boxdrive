@@ -1,18 +1,17 @@
 """Abstract object store interface for S3-compatible operations."""
 
-import datetime
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterator
 
 from .schemas import (
-    BucketMetadata,
+    BucketInfo,
     BucketName,
     ContentType,
     ETag,
     Key,
+    ListObjectsInfo,
     MaxKeys,
     Object,
-    ObjectMetadata,
+    ObjectInfo,
 )
 
 
@@ -20,7 +19,7 @@ class ObjectStore(ABC):
     """Abstract base class for object store implementations."""
 
     @abstractmethod
-    async def list_buckets(self) -> list[BucketMetadata]:
+    async def list_buckets(self) -> list[BucketInfo]:
         """List all buckets in the store."""
         pass
 
@@ -38,15 +37,29 @@ class ObjectStore(ABC):
     async def list_objects(
         self,
         bucket_name: BucketName,
+        *,
         prefix: Key | None = None,
         delimiter: str | None = None,
-        max_keys: MaxKeys | None = None,
-    ) -> AsyncIterator[ObjectMetadata]:
+        max_keys: MaxKeys = 1000,
+        marker: Key | None = None,
+    ) -> ListObjectsInfo:
         """List objects in a bucket."""
-        raise NotImplementedError
-        yield ObjectMetadata(
-            key="", size=0, last_modified=datetime.datetime.now(datetime.UTC), etag="", content_type=""
-        )
+        pass
+
+    @abstractmethod
+    async def list_objects_v2(
+        self,
+        bucket_name: BucketName,
+        *,
+        continuation_token: Key | None = None,
+        delimiter: str | None = None,
+        encoding_type: str | None = None,
+        max_keys: MaxKeys = 1000,
+        prefix: Key | None = None,
+        start_after: Key | None = None,
+    ) -> ListObjectsInfo:
+        """List objects in a bucket."""
+        pass
 
     @abstractmethod
     async def get_object(self, bucket_name: BucketName, key: Key) -> Object | None:
@@ -66,6 +79,6 @@ class ObjectStore(ABC):
         pass
 
     @abstractmethod
-    async def head_object(self, bucket_name: BucketName, key: Key) -> ObjectMetadata | None:
+    async def head_object(self, bucket_name: BucketName, key: Key) -> ObjectInfo | None:
         """Get object metadata without downloading the content."""
         pass

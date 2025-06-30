@@ -80,15 +80,15 @@ ContentType = Annotated[str, AfterValidator(validate_content_type)]
 MaxKeys = Annotated[int, AfterValidator(validate_max_keys)]
 
 
-class BucketMetadata(BaseModel):
-    """Metadata for a bucket in the store."""
+class BucketInfo(BaseModel):
+    """info for a bucket in the store."""
 
     name: BucketName
     creation_date: datetime.datetime
 
 
-class ObjectMetadata(BaseModel):
-    """Metadata for an object in the store."""
+class ObjectInfo(BaseModel):
+    """info for an object in the store."""
 
     key: Key
     size: int
@@ -98,7 +98,15 @@ class ObjectMetadata(BaseModel):
 
 
 class Object(BaseModel):
-    """Represents an object with its data and metadata."""
+    """Represents an object with its data and info."""
 
     data: bytes
-    metadata: ObjectMetadata
+    info: ObjectInfo
+
+
+class ListObjectsInfo(BaseModel):
+    objects: list[ObjectInfo]
+    is_truncated: bool
+
+
+ListObjectsV2Info = ListObjectsInfo
