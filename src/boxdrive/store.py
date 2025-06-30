@@ -11,7 +11,7 @@ from .schemas import (
     ListObjectsInfo,
     MaxKeys,
     Object,
-    ObjectMetadata,
+    ObjectInfo,
 )
 
 
@@ -79,6 +79,6 @@ class ObjectStore(ABC):
         pass
 
     @abstractmethod
-    async def head_object(self, bucket_name: BucketName, key: Key) -> ObjectMetadata | None:
+    async def head_object(self, bucket_name: BucketName, key: Key) -> ObjectInfo | None:
         """Get object metadata without downloading the content."""
         pass

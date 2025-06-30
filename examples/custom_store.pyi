@@ -6,7 +6,7 @@ from boxdrive import (
     ListObjectsInfo,
     MaxKeys,
     Object,
-    ObjectMetadata,
+    ObjectInfo,
     ObjectStore,
 )
 
@@ -19,7 +19,7 @@ class MyCustomStore(ObjectStore):
         self, bucket_name: str, key: str, data: bytes, content_type: ContentType | None = None
     ) -> ETag: ...
     async def delete_object(self, bucket_name: str, key: str) -> None: ...
-    async def head_object(self, bucket_name: str, key: str) -> ObjectMetadata | None: ...
+    async def head_object(self, bucket_name: str, key: str) -> ObjectInfo | None: ...
     async def list_objects(
         self,
         bucket_name: str,

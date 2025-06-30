@@ -11,7 +11,7 @@ from .schemas import (
     ListObjectsInfo,
     MaxKeys,
     Object,
-    ObjectMetadata,
+    ObjectInfo,
 )
 from .store import ObjectStore
 from .version import __version__
@@ -22,7 +22,7 @@ __all__ = [
     "stores",
     "create_app",
     "ObjectStore",
-    "ObjectMetadata",
+    "ObjectInfo",
     "BucketMetadata",
     "Object",
     "ListObjectsInfo",

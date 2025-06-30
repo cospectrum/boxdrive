@@ -18,7 +18,7 @@ from ..schemas import (
     ListObjectsInfo,
     MaxKeys,
     Object,
-    ObjectMetadata,
+    ObjectInfo,
 )
 from ..store import ObjectStore
 
@@ -136,9 +136,7 @@ class InMemoryStore(ObjectStore):
         etag = hashlib.md5(data).hexdigest()
         now = datetime.datetime.now(datetime.UTC)
         final_content_type = content_type or constants.DEFAULT_CONTENT_TYPE
-        metadata = ObjectMetadata(
-            key=key, size=len(data), last_modified=now, etag=etag, content_type=final_content_type
-        )
+        metadata = ObjectInfo(key=key, size=len(data), last_modified=now, etag=etag, content_type=final_content_type)
         obj = Object(data=data, metadata=metadata)
 
         bucket = self.buckets.get(bucket_name)
@@ -157,7 +155,7 @@ class InMemoryStore(ObjectStore):
         except KeyError:
             raise exceptions.NoSuchKey
 
-    async def head_object(self, bucket_name: str, key: Key) -> ObjectMetadata | None:
+    async def head_object(self, bucket_name: str, key: Key) -> ObjectInfo | None:
         """Get object metadata without downloading the content."""
         bucket = self.buckets.get(bucket_name)
         if bucket is None:

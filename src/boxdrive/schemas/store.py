@@ -87,7 +87,7 @@ class BucketMetadata(BaseModel):
     creation_date: datetime.datetime
 
 
-class ObjectMetadata(BaseModel):
+class ObjectInfo(BaseModel):
     """Metadata for an object in the store."""
 
     key: Key
@@ -101,9 +101,9 @@ class Object(BaseModel):
     """Represents an object with its data and metadata."""
 
     data: bytes
-    metadata: ObjectMetadata
+    metadata: ObjectInfo
 
 
 class ListObjectsInfo(BaseModel):
-    objects: list[ObjectMetadata]
+    objects: list[ObjectInfo]
     is_truncated: bool
