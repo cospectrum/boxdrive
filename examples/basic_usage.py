@@ -1,5 +1,5 @@
 from boxdrive import create_app
-from boxdrive.stores import MemoryStore
+from boxdrive.stores import InMemoryStore
 
-store = MemoryStore()
+store = InMemoryStore()
 app = create_app(store)

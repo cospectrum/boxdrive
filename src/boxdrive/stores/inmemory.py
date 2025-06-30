@@ -21,7 +21,7 @@ class Bucket(BaseModel):
     objects: dict[Key, "Object"]
 
 
-class MemoryStore(ObjectStore):
+class InMemoryStore(ObjectStore):
     """In-memory object store implementation."""
 
     def __init__(self) -> None:

@@ -5,16 +5,16 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from boxdrive import constants, create_app
-from boxdrive.stores import MemoryStore
+from boxdrive.stores import InMemoryStore
 
 
 @pytest.fixture
-def store() -> MemoryStore:
-    return MemoryStore()
+def store() -> InMemoryStore:
+    return InMemoryStore()
 
 
 @pytest.fixture
-def app(store: MemoryStore) -> FastAPI:
+def app(store: InMemoryStore) -> FastAPI:
     return create_app(store)
 
 
