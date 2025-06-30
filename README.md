@@ -11,7 +11,7 @@ Work in progress.
 ## Installation
 
 ```bash
-pip install -e git+https://github.com/cospectrum/boxdrive.git
+uv add boxdrive
 ```
 
 ## Quick Start
