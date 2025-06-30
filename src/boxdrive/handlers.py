@@ -3,7 +3,7 @@
 import xml.etree.ElementTree as ET
 from collections.abc import AsyncIterator
 
-from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from . import constants
@@ -19,11 +19,6 @@ def get_store(request: Request) -> ObjectStore:
 
 
 @router.get("/")
-async def root() -> dict[str, str]:
-    return {"message": "BoxDrive S3-compatible API", "status": "healthy"}
-
-
-@router.get("/buckets")
 async def list_buckets(store: ObjectStore = Depends(get_store)) -> Response:
     """List all buckets in the store."""
     buckets = await store.list_buckets()
@@ -55,7 +50,7 @@ async def list_objects(
 ) -> Response:
     objects: list[dict[str, object]] = []
 
-    async for obj in store.list_objects(prefix=prefix, delimiter=delimiter, max_keys=max_keys):
+    async for obj in store.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys):
         objects.append(
             {
                 "Key": obj.key,
@@ -105,11 +100,11 @@ async def get_object(
     range_header: str | None = Header(None, alias="Range"),
     store: ObjectStore = Depends(get_store),
 ) -> StreamingResponse:
-    metadata = await store.head_object(key)
+    metadata = await store.head_object(bucket, key)
     if not metadata:
         raise HTTPException(status_code=404, detail="Object not found")
 
-    data = await store.get_object(key)
+    data = await store.get_object(bucket, key)
     if data is None:
         raise HTTPException(status_code=404, detail="Object not found")
 
@@ -155,7 +150,7 @@ async def get_object(
 
 @router.head("/{bucket}/{key:path}")
 async def head_object(bucket: BucketName, key: Key, store: ObjectStore = Depends(get_store)) -> Response:
-    metadata = await store.head_object(key)
+    metadata = await store.head_object(bucket, key)
     if not metadata:
         raise HTTPException(status_code=404, detail="Object not found")
 
@@ -175,20 +170,20 @@ async def head_object(bucket: BucketName, key: Key, store: ObjectStore = Depends
 async def put_object(
     bucket: BucketName,
     key: Key,
-    file: UploadFile = File(...),
-    content_type: ContentType | None = None,
+    request: Request,
+    content_type: ContentType | None = Header(None),
     store: ObjectStore = Depends(get_store),
 ) -> Response:
-    content = await file.read()
-    final_content_type = content_type or file.content_type
-    result_etag = await store.put_object(key, content, final_content_type)
+    content = await request.body()
+    final_content_type = content_type or constants.DEFAULT_CONTENT_TYPE
+    result_etag = await store.put_object(bucket, key, content, final_content_type)
 
     return Response(status_code=200, headers={"ETag": f'"{result_etag}"', "Content-Length": "0"})
 
 
 @router.delete("/{bucket}/{key:path}")
 async def delete_object(bucket: BucketName, key: Key, store: ObjectStore = Depends(get_store)) -> Response:
-    success = await store.delete_object(key)
+    success = await store.delete_object(bucket, key)
     if not success:
         raise HTTPException(status_code=404, detail="Object not found")
 
@@ -202,7 +197,7 @@ async def delete_object(bucket: BucketName, key: Key, store: ObjectStore = Depen
     return Response(content=xml_str, media_type="application/xml", status_code=204)
 
 
-@router.post("/{bucket}")
+@router.put("/{bucket}")
 async def create_bucket(bucket: BucketName, store: ObjectStore = Depends(get_store)) -> Response:
     success = await store.create_bucket(bucket)
     if not success:
@@ -212,4 +207,7 @@ async def create_bucket(bucket: BucketName, store: ObjectStore = Depends(get_sto
 
 @router.delete("/{bucket}")
 async def delete_bucket(bucket: BucketName, store: ObjectStore = Depends(get_store)) -> Response:
+    success = await store.delete_bucket(bucket)
+    if not success:
+        raise HTTPException(status_code=404, detail="Bucket not found")
     return Response(status_code=204)

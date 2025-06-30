@@ -95,3 +95,18 @@ class ObjectMetadata(BaseModel):
     last_modified: datetime.datetime
     etag: ETag
     content_type: ContentType
+
+
+class Object(BaseModel):
+    """Represents an object with its data and metadata."""
+
+    data: bytes
+    metadata: ObjectMetadata
+
+
+class Bucket(BaseModel):
+    """Represents a bucket with its objects and creation date."""
+
+    name: BucketName
+    creation_date: datetime.datetime
+    objects: dict[Key, Object]

@@ -29,46 +29,40 @@ class ObjectStore(ABC):
         pass
 
     @abstractmethod
+    async def delete_bucket(self, bucket_name: BucketName) -> bool:
+        """Delete a bucket from the store."""
+        pass
+
+    @abstractmethod
     async def list_objects(
-        self, prefix: Key | None = None, delimiter: str | None = None, max_keys: MaxKeys | None = None
+        self,
+        bucket_name: BucketName,
+        prefix: Key | None = None,
+        delimiter: str | None = None,
+        max_keys: MaxKeys | None = None,
     ) -> AsyncIterator[ObjectMetadata]:
-        """List objects in the store."""
+        """List objects in a bucket."""
         raise NotImplementedError
-        yield ObjectMetadata(key="", size=0, last_modified=datetime.datetime.now())
+        yield ObjectMetadata(key="", size=0, last_modified=datetime.datetime.now(), etag="", content_type="")
 
     @abstractmethod
-    async def get_object(self, key: Key) -> bytes | None:
-        """Get an object by key."""
+    async def get_object(self, bucket_name: BucketName, key: Key) -> bytes | None:
+        """Get an object by bucket and key."""
         pass
 
     @abstractmethod
-    async def put_object(self, key: Key, data: bytes, content_type: ContentType | None = None) -> ETag:
-        """Put an object into the store."""
-        pass
-
-    @abstractmethod
-    async def delete_object(self, key: Key) -> bool:
-        """Delete an object from the store."""
-        pass
-
-    @abstractmethod
-    async def head_object(self, key: Key) -> ObjectMetadata | None:
-        """Get object metadata without downloading the content."""
-        pass
-
-    @abstractmethod
-    async def object_exists(self, key: Key) -> bool:
-        """Check if an object exists."""
-        pass
-
-    @abstractmethod
-    async def get_object_stream(self, key: Key) -> AsyncIterator[bytes] | None:
-        """Get an object as a stream."""
-        pass
-
-    @abstractmethod
-    async def put_object_stream(
-        self, key: Key, stream: AsyncIterator[bytes], content_type: ContentType | None = None
+    async def put_object(
+        self, bucket_name: BucketName, key: Key, data: bytes, content_type: ContentType | None = None
     ) -> ETag:
-        """Put an object from a stream."""
+        """Put an object into a bucket."""
+        pass
+
+    @abstractmethod
+    async def delete_object(self, bucket_name: BucketName, key: Key) -> bool:
+        """Delete an object from a bucket."""
+        pass
+
+    @abstractmethod
+    async def head_object(self, bucket_name: BucketName, key: Key) -> ObjectMetadata | None:
+        """Get object metadata without downloading the content."""
         pass
