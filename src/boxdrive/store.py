@@ -25,12 +25,12 @@ class ObjectStore(ABC):
         pass
 
     @abstractmethod
-    async def create_bucket(self, bucket_name: BucketName) -> bool:
+    async def create_bucket(self, bucket_name: BucketName) -> None:
         """Create a new bucket in the store."""
         pass
 
     @abstractmethod
-    async def delete_bucket(self, bucket_name: BucketName) -> bool:
+    async def delete_bucket(self, bucket_name: BucketName) -> None:
         """Delete a bucket from the store."""
         pass
 
@@ -61,7 +61,7 @@ class ObjectStore(ABC):
         pass
 
     @abstractmethod
-    async def delete_object(self, bucket_name: BucketName, key: Key) -> bool:
+    async def delete_object(self, bucket_name: BucketName, key: Key) -> None:
         """Delete an object from a bucket."""
         pass
 

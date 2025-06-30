@@ -2,6 +2,7 @@
 
 import pytest
 
+from boxdrive.exceptions import BucketAlreadyExists
 from boxdrive.stores import MemoryStore
 
 
@@ -36,8 +37,7 @@ async def test_delete_object(store: MemoryStore) -> None:
     data = b"Hello, World!"
     await store.create_bucket(BUCKET)
     await store.put_object(BUCKET, key, data)
-    success = await store.delete_object(BUCKET, key)
-    assert success
+    await store.delete_object(BUCKET, key)
     assert (await store.get_object(BUCKET, key)) is None
 
 
@@ -71,15 +71,14 @@ async def test_list_buckets_and_create_bucket(store: MemoryStore) -> None:
     assert len(buckets) == 0
     bucket_names = ["bucket1", "bucket2", "bucket3"]
     for bucket_name in bucket_names:
-        success = await store.create_bucket(bucket_name)
-        assert success
+        await store.create_bucket(bucket_name)
     buckets = await store.list_buckets()
     assert len(buckets) == 3
     bucket_names_found = [bucket.name for bucket in buckets]
     assert set(bucket_names_found) == set(bucket_names)
     for bucket in buckets:
         assert bucket.creation_date is not None
-    success = await store.create_bucket("bucket1")
-    assert not success
+    with pytest.raises(BucketAlreadyExists):
+        await store.create_bucket("bucket1")
     buckets = await store.list_buckets()
     assert len(buckets) == 3
