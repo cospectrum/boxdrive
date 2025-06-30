@@ -1,28 +1,33 @@
 [project]
 name = "boxdrive"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.0.1"
+description = "Generic object store with S3 compatible API"
 readme = "README.md"
 authors = [{ name = "Alex Severin", email = "severinalexeyv@gmail.com" }]
 requires-python = ">=3.10"
-dependencies = []
+dependencies = ["fastapi[standard]>=0.115.14", "pydantic>=2.11.7"]
+
+[dependency-groups]
+dev = ["mypy>=1.16.1", "pytest>=8.4.1", "pytest-asyncio>=1.0.0", "ruff>=0.12.1"]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[dependency-groups]
-dev = ["mypy>=1.16.1", "pytest>=8.4.1", "pytest-asyncio>=1.0.0", "ruff>=0.12.1"]
-
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+
 [tool.ruff]
 line-length = 120
-builtins = ["_"]
 
 [tool.ruff.lint]
-ignore = ["E731"]
+ignore = [
+    "E731", # lambda-assignment
+]
 extend-select = [
     "UP", # pyupgrade
     "I",  # isort
