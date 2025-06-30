@@ -4,7 +4,7 @@ import datetime
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 
-from .schemas import ObjectMetadata as ObjectMetadata
+from .schemas import ContentType, ETag, Key, MaxKeys, ObjectMetadata
 
 
 class ObjectStore(ABC):
@@ -12,43 +12,45 @@ class ObjectStore(ABC):
 
     @abstractmethod
     async def list_objects(
-        self, prefix: str | None = None, delimiter: str | None = None, max_keys: int | None = None
+        self, prefix: Key | None = None, delimiter: str | None = None, max_keys: MaxKeys | None = None
     ) -> AsyncIterator[ObjectMetadata]:
         """List objects in the store."""
         raise NotImplementedError
         yield ObjectMetadata(key="", size=0, last_modified=datetime.datetime.now())
 
     @abstractmethod
-    async def get_object(self, key: str) -> bytes | None:
+    async def get_object(self, key: Key) -> bytes | None:
         """Get an object by key."""
         pass
 
     @abstractmethod
-    async def put_object(self, key: str, data: bytes, content_type: str | None = None) -> str:
+    async def put_object(self, key: Key, data: bytes, content_type: ContentType | None = None) -> ETag:
         """Put an object into the store."""
         pass
 
     @abstractmethod
-    async def delete_object(self, key: str) -> bool:
+    async def delete_object(self, key: Key) -> bool:
         """Delete an object from the store."""
         pass
 
     @abstractmethod
-    async def head_object(self, key: str) -> ObjectMetadata | None:
+    async def head_object(self, key: Key) -> ObjectMetadata | None:
         """Get object metadata without downloading the content."""
         pass
 
     @abstractmethod
-    async def object_exists(self, key: str) -> bool:
+    async def object_exists(self, key: Key) -> bool:
         """Check if an object exists."""
         pass
 
     @abstractmethod
-    async def get_object_stream(self, key: str) -> AsyncIterator[bytes] | None:
+    async def get_object_stream(self, key: Key) -> AsyncIterator[bytes] | None:
         """Get an object as a stream."""
         pass
 
     @abstractmethod
-    async def put_object_stream(self, key: str, stream: AsyncIterator[bytes], content_type: str | None = None) -> str:
+    async def put_object_stream(
+        self, key: Key, stream: AsyncIterator[bytes], content_type: ContentType | None = None
+    ) -> ETag:
         """Put an object from a stream."""
         pass

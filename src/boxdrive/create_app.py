@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from .handlers import router
 from .store import ObjectStore
+from .version import __version__
 
 
 def create_app(store: ObjectStore) -> FastAPI:
@@ -15,7 +16,7 @@ def create_app(store: ObjectStore) -> FastAPI:
     Returns:
         Configured FastAPI application
     """
-    app = FastAPI(title="BoxDrive", description="S3-compatible object store API", version="0.0.1")
+    app = FastAPI(title="BoxDrive", description="S3-compatible object store API", version=__version__)
     app.state.store = store
     app.include_router(router)
     return app
