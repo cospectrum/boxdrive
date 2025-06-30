@@ -1,4 +1,4 @@
-"""Tests for the refactored app with handlers."""
+"""Tests for the app."""
 
 import pytest
 from fastapi import FastAPI

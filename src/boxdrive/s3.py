@@ -1,10 +1,10 @@
 import logging
-import xml.etree.ElementTree as ET
 from collections.abc import AsyncIterator
 from typing import Any
 
 from fastapi import HTTPException, Response
 from fastapi.responses import StreamingResponse
+from pydantic_xml import BaseXmlModel, attr, element
 
 from . import constants, exceptions
 from .schemas import BucketName, ContentType, Key, MaxKeys
@@ -13,23 +13,77 @@ from .store import ObjectStore
 logger = logging.getLogger(__name__)
 
 
+class XMLResponse(Response):
+    media_type = "application/xml"
+
+    def render(self, content: Any) -> bytes:
+        match content:
+            case None:
+                return b""
+            case BaseXmlModel():
+                xml = content.to_xml()
+                if isinstance(xml, str):
+                    return xml.encode(self.charset)
+                assert isinstance(xml, bytes), f"Expected bytes, got {type(xml)}"
+                return xml
+            case _:
+                raise ValueError(f"Expected None or BaseXmlModel, got {type(content)}")
+
+
+class OwnerXml(BaseXmlModel, tag="Owner"):
+    ID: str = element(tag="ID")
+    DisplayName: str = element(tag="DisplayName")
+
+
+class BucketXml(BaseXmlModel, tag="Bucket"):
+    Name: str = element(tag="Name")
+    CreationDate: str = element(tag="CreationDate")
+
+
+class BucketsXml(BaseXmlModel, tag="Buckets"):
+    Bucket: list[BucketXml] = element(tag="Bucket")
+
+
+class ListAllMyBucketsResultXml(BaseXmlModel, tag="ListAllMyBucketsResult"):
+    xmlns: str = attr(default=constants.S3_XML_NAMESPACE)
+    Owner: OwnerXml = element(tag="Owner")
+    Buckets: BucketsXml = element(tag="Buckets")
+
+
+class OwnerShortXml(BaseXmlModel, tag="Owner"):
+    ID: str = element(tag="ID")
+    DisplayName: str = element(tag="DisplayName")
+
+
+class ContentsXml(BaseXmlModel, tag="Contents"):
+    Key: str = element(tag="Key")
+    LastModified: str = element(tag="LastModified")
+    ETag: str = element(tag="ETag")
+    Size: int = element(tag="Size")
+    StorageClass: str = element(tag="StorageClass")
+    Owner: OwnerShortXml = element(tag="Owner")
+
+
+class ListBucketResultXml(BaseXmlModel, tag="ListBucketResult"):
+    xmlns: str = attr(default=constants.S3_XML_NAMESPACE)
+    Name: str = element(tag="Name")
+    Prefix: str = element(tag="Prefix")
+    MaxKeys: int = element(tag="MaxKeys")
+    IsTruncated: str = element(tag="IsTruncated")
+    Delimiter: str | None = element(tag="Delimiter", default=None)
+    Contents: list[ContentsXml] = element(tag="Contents")
+
+
 class S3:
     def __init__(self, store: ObjectStore):
         self.store = store
 
-    async def list_buckets(self) -> Response:
+    async def list_buckets(self) -> ListAllMyBucketsResultXml:
         buckets = await self.store.list_buckets()
-        root = ET.Element("ListAllMyBucketsResult", xmlns=constants.S3_XML_NAMESPACE)
-        owner = ET.SubElement(root, "Owner")
-        ET.SubElement(owner, "ID").text = constants.OWNER_ID
-        ET.SubElement(owner, "DisplayName").text = constants.OWNER_DISPLAY_NAME
-        buckets_elem = ET.SubElement(root, "Buckets")
-        for bucket in buckets:
-            bucket_elem = ET.SubElement(buckets_elem, "Bucket")
-            ET.SubElement(bucket_elem, "Name").text = bucket.name
-            ET.SubElement(bucket_elem, "CreationDate").text = bucket.creation_date.isoformat()
-        xml_str = ET.tostring(root, encoding="unicode")
-        return Response(content=xml_str, media_type="application/xml")
+        buckets_xml = [BucketXml(Name=bucket.name, CreationDate=bucket.creation_date.isoformat()) for bucket in buckets]
+        owner = OwnerXml(ID=constants.OWNER_ID, DisplayName=constants.OWNER_DISPLAY_NAME)
+        buckets_model = BucketsXml(Bucket=buckets_xml)
+        return ListAllMyBucketsResultXml(Owner=owner, Buckets=buckets_model)
 
     async def list_objects(
         self,
@@ -37,44 +91,32 @@ class S3:
         prefix: Key | None = None,
         delimiter: str | None = None,
         max_keys: MaxKeys | None = 1000,
-    ) -> Response:
-        objects: list[dict[str, Any]] = []
+    ) -> ListBucketResultXml:
+        objects: list[ContentsXml] = []
         try:
             async for obj in self.store.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys):
+                etag = f'"{obj.etag}"' if obj.etag else ""
                 objects.append(
-                    {
-                        "Key": obj.key,
-                        "Size": obj.size,
-                        "LastModified": obj.last_modified.isoformat(),
-                        "ETag": f'"{obj.etag}"' if obj.etag else None,
-                        "StorageClass": constants.DEFAULT_STORAGE_CLASS,
-                        "Owner": {"ID": constants.OWNER_ID, "DisplayName": constants.OWNER_DISPLAY_NAME},
-                    }
+                    ContentsXml(
+                        Key=obj.key,
+                        LastModified=obj.last_modified.isoformat(),
+                        ETag=etag,
+                        Size=obj.size,
+                        StorageClass=constants.DEFAULT_STORAGE_CLASS,
+                        Owner=OwnerShortXml(ID=constants.OWNER_ID, DisplayName=constants.OWNER_DISPLAY_NAME),
+                    )
                 )
         except exceptions.NoSuchBucket:
             logger.info("Bucket %s not found", bucket)
             raise HTTPException(status_code=404, detail="The specified bucket does not exist.")
-        root = ET.Element("ListBucketResult", xmlns=constants.S3_XML_NAMESPACE)
-        ET.SubElement(root, "Name").text = bucket
-        ET.SubElement(root, "Prefix").text = prefix or ""
-        ET.SubElement(root, "MaxKeys").text = str(max_keys)
-        ET.SubElement(root, "IsTruncated").text = "false"
-        if delimiter:
-            ET.SubElement(root, "Delimiter").text = delimiter
-        for obj_dict in objects:
-            contents = ET.SubElement(root, "Contents")
-            ET.SubElement(contents, "Key").text = str(obj_dict["Key"])
-            ET.SubElement(contents, "LastModified").text = str(obj_dict["LastModified"])
-            ET.SubElement(contents, "ETag").text = str(obj_dict["ETag"])
-            ET.SubElement(contents, "Size").text = str(obj_dict["Size"])
-            ET.SubElement(contents, "StorageClass").text = str(obj_dict["StorageClass"])
-            owner = ET.SubElement(contents, "Owner")
-            owner_dict = obj_dict["Owner"]
-            if isinstance(owner_dict, dict):
-                ET.SubElement(owner, "ID").text = str(owner_dict["ID"])
-                ET.SubElement(owner, "DisplayName").text = str(owner_dict["DisplayName"])
-        xml_str = ET.tostring(root, encoding="unicode")
-        return Response(content=xml_str, media_type="application/xml", headers={"Content-Type": "application/xml"})
+        return ListBucketResultXml(
+            Name=bucket,
+            Prefix=prefix or "",
+            MaxKeys=max_keys or 1000,
+            IsTruncated="false",
+            Delimiter=delimiter,
+            Contents=objects,
+        )
 
     async def get_object(
         self,
@@ -152,19 +194,14 @@ class S3:
         result_etag = await self.store.put_object(bucket, key, content, final_content_type)
         return Response(status_code=200, headers={"ETag": f'"{result_etag}"', "Content-Length": "0"})
 
-    async def delete_object(self, bucket: BucketName, key: Key) -> Response:
+    async def delete_object(self, bucket: BucketName, key: Key) -> None:
         try:
             await self.store.delete_object(bucket, key)
         except exceptions.NoSuchBucket:
             logger.info("Bucket %s not found", bucket)
         except exceptions.NoSuchKey:
             logger.info("Object %s not found in bucket %s", key, bucket)
-        root = ET.Element("DeleteResult", xmlns=constants.S3_XML_NAMESPACE)
-        deleted = ET.SubElement(root, "Deleted")
-        ET.SubElement(deleted, "Key").text = key
-        ET.SubElement(deleted, "VersionId").text = "null"
-        xml_str = ET.tostring(root, encoding="unicode")
-        return Response(content=xml_str, media_type="application/xml", status_code=204)
+        return None
 
     async def create_bucket(self, bucket: BucketName) -> Response:
         try:

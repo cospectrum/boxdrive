@@ -2,10 +2,10 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, Header, Query, Request, Response
+from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
 
-from .s3 import S3
+from .s3 import S3, XMLResponse
 from .schemas import BucketName, ContentType, Key, MaxKeys
 from .store import ObjectStore
 
@@ -23,8 +23,9 @@ def get_s3(request: Request) -> S3:
 
 
 @router.get("/")
-async def list_buckets(s3: S3 = Depends(get_s3)) -> Response:
-    return await s3.list_buckets()
+async def list_buckets(s3: S3 = Depends(get_s3)) -> XMLResponse:
+    buckets = await s3.list_buckets()
+    return XMLResponse(buckets)
 
 
 @router.get("/{bucket}")
@@ -34,8 +35,9 @@ async def list_objects(
     delimiter: str | None = Query(None),
     max_keys: MaxKeys | None = Query(1000),
     s3: S3 = Depends(get_s3),
-) -> Response:
-    return await s3.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys)
+) -> XMLResponse:
+    objects = await s3.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys)
+    return XMLResponse(objects)
 
 
 @router.get("/{bucket}/{key:path}")
@@ -66,8 +68,9 @@ async def put_object(
 
 
 @router.delete("/{bucket}/{key:path}")
-async def delete_object(bucket: BucketName, key: Key, s3: S3 = Depends(get_s3)) -> Response:
-    return await s3.delete_object(bucket, key)
+async def delete_object(bucket: BucketName, key: Key, s3: S3 = Depends(get_s3)) -> XMLResponse:
+    await s3.delete_object(bucket, key)
+    return XMLResponse(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.put("/{bucket}")
