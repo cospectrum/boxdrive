@@ -102,11 +102,3 @@ class Object(BaseModel):
 
     data: bytes
     metadata: ObjectMetadata
-
-
-class Bucket(BaseModel):
-    """Represents a bucket with its objects and creation date."""
-
-    name: BucketName
-    creation_date: datetime.datetime
-    objects: dict[Key, Object]

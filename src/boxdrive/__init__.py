@@ -2,7 +2,7 @@
 
 from . import stores
 from .create_app import create_app
-from .schemas import BucketName, ContentType, ETag, Key, MaxKeys, ObjectMetadata
+from .schemas import BucketMetadata, BucketName, ContentType, ETag, Key, MaxKeys, Object, ObjectMetadata
 from .store import ObjectStore
 from .version import __version__
 
@@ -12,6 +12,8 @@ __all__ = [
     "create_app",
     "ObjectStore",
     "ObjectMetadata",
+    "BucketMetadata",
+    "Object",
     "BucketName",
     "ContentType",
     "ETag",

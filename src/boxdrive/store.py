@@ -11,6 +11,7 @@ from .schemas import (
     ETag,
     Key,
     MaxKeys,
+    Object,
     ObjectMetadata,
 )
 
@@ -48,7 +49,7 @@ class ObjectStore(ABC):
         )
 
     @abstractmethod
-    async def get_object(self, bucket_name: BucketName, key: Key) -> bytes | None:
+    async def get_object(self, bucket_name: BucketName, key: Key) -> Object | None:
         """Get an object by bucket and key."""
         pass
 

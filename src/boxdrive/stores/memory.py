@@ -4,9 +4,19 @@ import datetime
 import hashlib
 from collections.abc import AsyncIterator
 
+from pydantic import BaseModel
+
 from .. import constants
-from ..schemas import Bucket, BucketMetadata, BucketName, ContentType, ETag, Key, MaxKeys, Object, ObjectMetadata
+from ..schemas import BucketMetadata, BucketName, ContentType, ETag, Key, MaxKeys, Object, ObjectMetadata
 from ..store import ObjectStore
+
+
+class Bucket(BaseModel):
+    """Represents a bucket with its objects and creation date."""
+
+    name: BucketName
+    creation_date: datetime.datetime
+    objects: dict[Key, "Object"]
 
 
 class MemoryStore(ObjectStore):
@@ -55,14 +65,12 @@ class MemoryStore(ObjectStore):
         for key in keys:
             yield bucket.objects[key].metadata
 
-    async def get_object(self, bucket_name: str, key: Key) -> bytes | None:
+    async def get_object(self, bucket_name: str, key: Key) -> Object | None:
         """Get an object by bucket and key."""
         if bucket_name not in self._buckets:
             return None
         bucket = self._buckets[bucket_name]
-        if key in bucket.objects:
-            return bucket.objects[key].data
-        return None
+        return bucket.objects.get(key)
 
     async def put_object(
         self, bucket_name: str, key: Key, data: bytes, content_type: ContentType | None = None

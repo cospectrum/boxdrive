@@ -18,8 +18,9 @@ async def test_put_and_get_object(store: MemoryStore) -> None:
     content_type = "text/plain"
     await store.create_bucket(BUCKET)
     etag = await store.put_object(BUCKET, key, data, content_type)
-    retrieved_data = await store.get_object(BUCKET, key)
-    assert retrieved_data == data
+    obj = await store.get_object(BUCKET, key)
+    assert obj is not None
+    assert obj.data == data
     metadata = await store.head_object(BUCKET, key)
     assert metadata is not None
     assert metadata.key == key
@@ -37,7 +38,7 @@ async def test_delete_object(store: MemoryStore) -> None:
     await store.put_object(BUCKET, key, data)
     success = await store.delete_object(BUCKET, key)
     assert success
-    assert await store.get_object(BUCKET, key) is None
+    assert (await store.get_object(BUCKET, key)) is None
 
 
 async def test_list_objects(store: MemoryStore) -> None:

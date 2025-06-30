@@ -100,13 +100,11 @@ async def get_object(
     range_header: str | None = Header(None, alias="Range"),
     store: ObjectStore = Depends(get_store),
 ) -> StreamingResponse:
-    metadata = await store.head_object(bucket, key)
-    if not metadata:
+    obj = await store.get_object(bucket, key)
+    if obj is None:
         raise HTTPException(status_code=404, detail="Object not found")
-
-    data = await store.get_object(bucket, key)
-    if data is None:
-        raise HTTPException(status_code=404, detail="Object not found")
+    data = obj.data
+    metadata = obj.metadata
 
     start = 0
     end = len(data) - 1

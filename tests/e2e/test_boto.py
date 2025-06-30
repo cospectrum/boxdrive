@@ -1,4 +1,4 @@
-"""e2e tests using boto3 to verify S3 compatibility."""
+"""End-to-end tests using boto3 to verify S3 compatibility."""
 
 import os
 from typing import Any
