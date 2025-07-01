@@ -114,6 +114,13 @@ export S3_ENDPOINT_URL=http://127.0.0.1:8000
 uv run run pytest tests/e2e
 ```
 
+third_party/s3-tests:
+```bash
+cd tests/third_party/s3-tests
+export S3TEST_CONF=s3tests.conf
+uv run tox -- s3tests_boto3/functional/test_s3.py -m boxdrive
+```
+
 ### Code Quality
 
 ```bash

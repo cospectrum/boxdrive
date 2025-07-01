@@ -32,7 +32,7 @@ jobs:
         run: uv run ruff check
       - name: mypy
         run: uv run mypy .
-      - name: unit tests
+      - name: tests/unit
         run: uv run pytest tests/unit/ -v
       - name: Start API server (background)
         run: uv run fastapi dev examples/inmemory.py --port 8000 &
@@ -44,7 +44,13 @@ jobs:
           done
           echo "failed to start API server"
           exit 1
-      - name: e2e tests
+      - name: tests/e2e
         run: uv run pytest tests/e2e/ -v
         env:
           S3_ENDPOINT_URL: http://127.0.0.1:8000
+      - name: tests/third_party/s3-tests
+        run: |
+          cd tests/third_party/s3-tests
+          uv run tox -- s3tests_boto3/functional/test_s3.py -m boxdrive
+        env:
+          S3TEST_CONF: s3tests.conf

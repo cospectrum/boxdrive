@@ -7,6 +7,7 @@ import logging
 from pydantic import BaseModel
 
 from boxdrive import exceptions
+from boxdrive.schemas.store import ListObjectsV2Info
 
 from .. import constants
 from ..schemas import (
@@ -39,6 +40,27 @@ class InMemoryStore(ObjectStore):
 
     def __init__(self, *, buckets: Buckets | None = None) -> None:
         self.buckets = buckets or {}
+
+    @staticmethod
+    def _split_contents_and_prefixes(
+        objects: list[ObjectInfo], *, prefix: Key | None, delimiter: str | None
+    ) -> tuple[list[ObjectInfo], list[str]]:
+        prefix = prefix or ""
+        if not delimiter:
+            return objects, []
+        contents = []
+        common_prefixes = set()
+        plen = len(prefix)
+        for obj in objects:
+            assert obj.key.startswith(prefix), "all objects must be filtered by prefix"
+            key = obj.key[plen:]
+            if delimiter in key:
+                idx = key.index(delimiter)
+                common_prefix = obj.key[: plen + idx + len(delimiter)]
+                common_prefixes.add(common_prefix)
+            else:
+                contents.append(obj)
+        return contents, sorted(common_prefixes)
 
     async def list_buckets(self) -> list[BucketInfo]:
         """List all buckets in the store."""
@@ -84,10 +106,12 @@ class InMemoryStore(ObjectStore):
         if marker:
             objects = [obj for obj in objects if obj.key > marker]
 
+        objects, common_prefixes = self._split_contents_and_prefixes(objects, prefix=prefix, delimiter=delimiter)
+
         is_truncated = len(objects) > max_keys
         objects = objects[:max_keys]
 
-        return ListObjectsInfo(objects=objects, is_truncated=is_truncated)
+        return ListObjectsInfo(objects=objects, is_truncated=is_truncated, common_prefixes=common_prefixes)
 
     async def list_objects_v2(
         self,
@@ -99,7 +123,7 @@ class InMemoryStore(ObjectStore):
         max_keys: MaxKeys = 1000,
         prefix: Key | None = None,
         start_after: Key | None = None,
-    ) -> ListObjectsInfo:
+    ) -> ListObjectsV2Info:
         bucket = self.buckets.get(bucket_name)
         if bucket is None:
             raise exceptions.NoSuchBucket
@@ -113,10 +137,12 @@ class InMemoryStore(ObjectStore):
         if after:
             objects = [obj for obj in objects if obj.key > after]
 
+        objects, common_prefixes = self._split_contents_and_prefixes(objects, prefix=prefix, delimiter=delimiter)
+
         is_truncated = len(objects) > max_keys
         objects = objects[:max_keys]
 
-        return ListObjectsInfo(objects=objects, is_truncated=is_truncated)
+        return ListObjectsV2Info(objects=objects, is_truncated=is_truncated, common_prefixes=common_prefixes)
 
     async def get_object(self, bucket_name: str, key: Key) -> Object | None:
         """Get an object by bucket and key."""

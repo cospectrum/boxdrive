@@ -1,3 +1,4 @@
+from . import xml as xml
 from .store import (
     BucketInfo,
     BucketName,

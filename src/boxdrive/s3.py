@@ -7,16 +7,7 @@ from fastapi.responses import StreamingResponse
 from boxdrive.schemas.store import ListObjectsInfo
 
 from . import constants, exceptions
-from .schemas import BucketName, ContentType, Key, MaxKeys
-from .schemas.xml import (
-    BucketsXml,
-    BucketXml,
-    ContentsXml,
-    ListAllMyBucketsResultXml,
-    ListBucketResultXml,
-    OwnerShortXml,
-    OwnerXml,
-)
+from .schemas import BucketName, ContentType, Key, MaxKeys, xml
 from .store import ObjectStore
 
 logger = logging.getLogger(__name__)
@@ -26,12 +17,14 @@ class S3:
     def __init__(self, store: ObjectStore):
         self.store = store
 
-    async def list_buckets(self) -> ListAllMyBucketsResultXml:
+    async def list_buckets(self) -> xml.ListAllMyBucketsResult:
         buckets = await self.store.list_buckets()
-        buckets_xml = [BucketXml(Name=bucket.name, CreationDate=bucket.creation_date.isoformat()) for bucket in buckets]
-        owner = OwnerXml(ID=constants.OWNER_ID, DisplayName=constants.OWNER_DISPLAY_NAME)
-        buckets_model = BucketsXml(Bucket=buckets_xml)
-        return ListAllMyBucketsResultXml(Owner=owner, Buckets=buckets_model)
+        buckets_xml = [
+            xml.Bucket(name=bucket.name, creation_date=bucket.creation_date.isoformat()) for bucket in buckets
+        ]
+        owner = xml.Owner(id=constants.OWNER_ID, display_name=constants.OWNER_DISPLAY_NAME)
+        buckets_model = xml.Buckets(buckets=buckets_xml)
+        return xml.ListAllMyBucketsResult(owner=owner, buckets=buckets_model)
 
     async def list_objects_v2(
         self,
@@ -41,7 +34,7 @@ class S3:
         max_keys: MaxKeys = 1000,
         continuation_token: Key | None = None,
         start_after: Key | None = None,
-    ) -> ListBucketResultXml:
+    ) -> xml.ListBucketResult:
         try:
             objects_info = await self.store.list_objects_v2(
                 bucket,
@@ -69,7 +62,7 @@ class S3:
         delimiter: str | None = None,
         max_keys: MaxKeys = 1000,
         marker: Key | None = None,
-    ) -> ListBucketResultXml:
+    ) -> xml.ListBucketResult:
         try:
             objects_info = await self.store.list_objects(
                 bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker
@@ -92,28 +85,29 @@ class S3:
         prefix: Key | None = None,
         delimiter: str | None = None,
         max_keys: MaxKeys = 1000,
-    ) -> ListBucketResultXml:
-        objects: list[ContentsXml] = []
+    ) -> xml.ListBucketResult:
+        objects: list[xml.Content] = []
         for obj in objects_info.objects:
             etag = f'"{obj.etag}"' if obj.etag else ""
             objects.append(
-                ContentsXml(
-                    Key=obj.key,
-                    LastModified=obj.last_modified.isoformat(),
-                    ETag=etag,
-                    Size=obj.size,
-                    StorageClass=constants.DEFAULT_STORAGE_CLASS,
-                    Owner=OwnerShortXml(ID=constants.OWNER_ID, DisplayName=constants.OWNER_DISPLAY_NAME),
+                xml.Content(
+                    key=obj.key,
+                    last_modified=obj.last_modified.isoformat(),
+                    etag=etag,
+                    size=obj.size,
+                    storage_class=constants.DEFAULT_STORAGE_CLASS,
+                    owner=xml.Owner(id=constants.OWNER_ID, display_name=constants.OWNER_DISPLAY_NAME),
                 )
             )
-        return ListBucketResultXml(
-            Name=bucket,
-            Prefix=prefix or "",
-            MaxKeys=max_keys,
-            KeyCount=len(objects),
-            IsTruncated=objects_info.is_truncated,
-            Delimiter=delimiter,
-            Contents=objects,
+        return xml.ListBucketResult(
+            name=bucket,
+            prefix=prefix or "",
+            max_keys=max_keys,
+            key_count=len(objects),
+            is_truncated=objects_info.is_truncated,
+            delimiter=delimiter,
+            contents=objects,
+            common_prefixes=[xml.CommonPrefix(prefix=prefix) for prefix in objects_info.common_prefixes],
         )
 
     async def get_object(
