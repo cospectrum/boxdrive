@@ -94,6 +94,8 @@ class MyCustomStore(ObjectStore):
         start_after: Key | None = None,
     ) -> ListObjectsV2Info: ...
 ```
+> Use exceptions from [boxdrive.exceptions](./src/boxdrive/exceptions.py)
+> (e.g., NoSuchBucket, NoSuchKey) in your custom store implementation.
 
 ## Development
 
