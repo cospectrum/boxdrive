@@ -1,7 +1,7 @@
 """BoxDrive - Generic object store with S3 compatible API."""
 
 from . import exceptions, stores
-from .create_app import create_app
+from ._create_app import create_app
 from .schemas import (
     BucketInfo,
     BucketName,
