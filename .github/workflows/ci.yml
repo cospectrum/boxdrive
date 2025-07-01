@@ -22,6 +22,7 @@ jobs:
   lint:
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/common-setup
       - name: ruff check
         run: uv run ruff check
@@ -29,6 +30,7 @@ jobs:
   mypy:
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/common-setup
       - name: mypy
         run: uv run mypy .
@@ -36,6 +38,7 @@ jobs:
   unit:
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/common-setup
       - name: tests/unit
         run: uv run pytest tests/unit/ -v
@@ -43,6 +46,7 @@ jobs:
   e2e:
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/common-setup
       - name: Start API server (background)
         run: uv run fastapi dev examples/inmemory.py --port 8000 &
@@ -63,6 +67,7 @@ jobs:
     name: tests/third_party/s3-tests
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/common-setup
       - name: Start API server (background)
         run: uv run fastapi dev examples/inmemory.py --port 8000 &
