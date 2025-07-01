@@ -1,4 +1,5 @@
 name: Start FastAPI Server
+description: Start FastAPI Server
 inputs:
   port:
     description: Port to run the FastAPI server on
