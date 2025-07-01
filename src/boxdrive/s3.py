@@ -110,7 +110,8 @@ class S3:
             Name=bucket,
             Prefix=prefix or "",
             MaxKeys=max_keys,
-            IsTruncated=str(objects_info.is_truncated).lower(),
+            KeyCount=len(objects),
+            IsTruncated=objects_info.is_truncated,
             Delimiter=delimiter,
             Contents=objects,
         )

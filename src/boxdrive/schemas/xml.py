@@ -62,6 +62,7 @@ class ListBucketResultXml(BaseXmlModel, tag="ListBucketResult"):
     Name: str = element(tag="Name")
     Prefix: str = element(tag="Prefix")
     MaxKeys: int = element(tag="MaxKeys")
-    IsTruncated: str = element(tag="IsTruncated")
+    KeyCount: int = element(tag="KeyCount")
+    IsTruncated: bool = element(tag="IsTruncated")
     Delimiter: str | None = element(tag="Delimiter", default=None)
     Contents: list[ContentsXml] = element(tag="Contents")
