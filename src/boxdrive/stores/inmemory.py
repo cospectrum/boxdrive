@@ -36,7 +36,10 @@ Buckets = dict[BucketName, Bucket]
 
 
 class InMemoryStore(ObjectStore):
-    """In-memory object store implementation."""
+    """In-memory object store implementation.
+
+    Note: The store can raise unexpected RuntimeError in multi-threaded code.
+    """
 
     def __init__(self, *, buckets: Buckets | None = None) -> None:
         self.buckets = buckets or {}
