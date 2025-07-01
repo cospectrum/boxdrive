@@ -97,14 +97,14 @@ class MyCustomStore(ObjectStore):
 
 ## Development
 
-### Running Tests
+### Tests
 
-unit:
+#### unit
 ```bash
 uv run pytest tests/unit
 ```
 
-e2e:
+#### e2e
 ```bash
 # start server
 uv run fastapi dev examples/inmemory.py --port 8000
@@ -114,12 +114,14 @@ export S3_ENDPOINT_URL=http://127.0.0.1:8000
 uv run run pytest tests/e2e
 ```
 
-third_party/s3-tests:
+#### third_party/s3-tests
 ```bash
 cd tests/third_party/s3-tests
 export S3TEST_CONF=s3tests.conf
 uv run tox -- s3tests_boto3/functional/test_s3.py -m boxdrive
 ```
+See [tests/third_party/s3-tests/boxdrive.md](./tests/third_party/s3-tests/boxdrive.md)
+for additional info.
 
 ### Code Quality
 

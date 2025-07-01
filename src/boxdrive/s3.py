@@ -103,7 +103,7 @@ class S3:
             name=bucket,
             prefix=prefix or "",
             max_keys=max_keys,
-            key_count=len(objects),
+            key_count=len(objects) + len(objects_info.common_prefixes),
             is_truncated=objects_info.is_truncated,
             delimiter=delimiter,
             contents=objects,

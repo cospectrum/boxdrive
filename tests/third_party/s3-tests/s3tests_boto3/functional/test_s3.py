@@ -216,6 +216,7 @@ def test_bucket_list_delimiter_basic():
     assert len(prefixes) == 2
     assert prefixes == ['foo/', 'quux/']
 
+@pytest.mark.boxdrive
 @pytest.mark.list_objects_v2
 def test_bucket_listv2_delimiter_basic():
     bucket_name = _create_objects(keys=['foo/bar', 'foo/bar/xyzzy', 'quux/thud', 'asdf'])
