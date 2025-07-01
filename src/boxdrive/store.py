@@ -61,8 +61,8 @@ class ObjectStore(ABC):
         pass
 
     @abstractmethod
-    async def get_object(self, bucket_name: BucketName, key: Key) -> Object | None:
-        """Get an object by bucket and key."""
+    async def get_object(self, bucket_name: BucketName, key: Key) -> Object:
+        """Get an object by bucket and key. Raises NoSuchBucket or NoSuchKey if not found."""
         pass
 
     @abstractmethod
@@ -78,6 +78,6 @@ class ObjectStore(ABC):
         pass
 
     @abstractmethod
-    async def head_object(self, bucket_name: BucketName, key: Key) -> ObjectInfo | None:
-        """Get object metadata without downloading the content."""
+    async def head_object(self, bucket_name: BucketName, key: Key) -> ObjectInfo:
+        """Get object metadata without downloading the content. Raises NoSuchBucket or NoSuchKey if not found."""
         pass

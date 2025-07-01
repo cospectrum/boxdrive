@@ -54,16 +54,16 @@ async def test_get_object(store: InMemoryStore) -> None:
     await store.create_bucket("bucket1")
     await store.put_object("bucket1", "key1", b"data")
     obj = await store.get_object("bucket1", "key1")
-    assert obj is not None
     assert obj.data == b"data"
-    assert await store.get_object("bucket1", "no-such-key") is None
-    assert await store.get_object("no-such-bucket", "key1") is None
+    with pytest.raises(NoSuchKey):
+        await store.get_object("bucket1", "no-such-key")
+    with pytest.raises(NoSuchBucket):
+        await store.get_object("no-such-bucket", "key1")
 
 
 async def test_put_object(store: InMemoryStore) -> None:
     info = await store.put_object("bucket1", "key1", b"data", "text/plain")
     obj = await store.get_object("bucket1", "key1")
-    assert obj is not None
     assert info.etag == obj.info.etag
     assert obj.data == b"data"
     assert obj.info.content_type == "text/plain"
@@ -73,7 +73,8 @@ async def test_delete_object(store: InMemoryStore) -> None:
     await store.create_bucket("bucket1")
     await store.put_object("bucket1", "key1", b"data")
     await store.delete_object("bucket1", "key1")
-    assert await store.get_object("bucket1", "key1") is None
+    with pytest.raises(NoSuchKey):
+        await store.get_object("bucket1", "key1")
     with pytest.raises(NoSuchKey):
         await store.delete_object("bucket1", "key1")
     with pytest.raises(NoSuchBucket):
@@ -84,7 +85,8 @@ async def test_head_object(store: InMemoryStore) -> None:
     await store.create_bucket("bucket1")
     await store.put_object("bucket1", "key1", b"data")
     meta = await store.head_object("bucket1", "key1")
-    assert meta is not None
     assert meta.key == "key1"
-    assert await store.head_object("bucket1", "no-such-key") is None
-    assert await store.head_object("no-such-bucket", "key1") is None
+    with pytest.raises(NoSuchKey):
+        await store.head_object("bucket1", "no-such-key")
+    with pytest.raises(NoSuchBucket):
+        await store.head_object("no-such-bucket", "key1")

@@ -116,8 +116,11 @@ class S3:
         key: Key,
         range_header: str | None = None,
     ) -> StreamingResponse:
-        obj = await self.store.get_object(bucket, key)
-        if obj is None:
+        try:
+            obj = await self.store.get_object(bucket, key)
+        except exceptions.NoSuchBucket:
+            raise HTTPException(status_code=404, detail="Bucket not found")
+        except exceptions.NoSuchKey:
             raise HTTPException(status_code=404, detail="Object not found")
         data = obj.data
         metadata = obj.info
@@ -161,8 +164,11 @@ class S3:
         )
 
     async def head_object(self, bucket: BucketName, key: Key) -> Response:
-        metadata = await self.store.head_object(bucket, key)
-        if not metadata:
+        try:
+            metadata = await self.store.head_object(bucket, key)
+        except exceptions.NoSuchBucket:
+            raise HTTPException(status_code=404, detail="Bucket not found")
+        except exceptions.NoSuchKey:
             raise HTTPException(status_code=404, detail="Object not found")
         return Response(
             status_code=200,
