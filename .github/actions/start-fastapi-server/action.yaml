@@ -1,0 +1,28 @@
+name: Start FastAPI Server
+inputs:
+  port:
+    description: Port to run the FastAPI server on
+    required: false
+    default: '8000'
+  app:
+    description: Path to the FastAPI app to run
+    required: false
+    default: 'examples/inmemory.py'
+runs:
+  using: composite
+  steps:
+    - name: Start FastAPI server (background)
+      shell: bash
+      run: |
+        uv run fastapi run ${{ inputs.app }} --port ${{ inputs.port }} &
+    - name: Wait for API server to be ready
+      shell: bash
+      run: |
+        for _ in {1..10}; do
+          if curl -sSf http://127.0.0.1:${{ inputs.port }}/; then
+            exit 0
+          fi
+          sleep 1
+        done
+        echo "failed to start API server"
+        exit 1 

@@ -49,16 +49,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/common-setup
-      - name: Start API server (background)
-        run: uv run fastapi dev examples/inmemory.py --port 8000 &
-      - name: Wait for API server to be ready
-        run: |
-          for _ in {1..10}; do
-            curl -sSf http://127.0.0.1:8000/ && exit 0
-            sleep 1
-          done
-          echo "failed to start API server"
-          exit 1
+      - uses: ./.github/actions/start-fastapi-server
+        with:
+          port: 8000
       - name: tests/e2e
         run: uv run pytest tests/e2e/ -v
         env:
@@ -70,16 +63,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/common-setup
-      - name: Start API server (background)
-        run: uv run fastapi dev examples/inmemory.py --port 8000 &
-      - name: Wait for API server to be ready
-        run: |
-          for _ in {1..10}; do
-            curl -sSf http://127.0.0.1:8000/ && exit 0
-            sleep 1
-          done
-          echo "failed to start API server"
-          exit 1
+      - uses: ./.github/actions/start-fastapi-server
+        with:
+          port: 8000
       - name: tests/third_party/s3-tests
         run: |
           cd tests/third_party/s3-tests

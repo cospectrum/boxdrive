@@ -1,5 +1,7 @@
 # s3-tests
 
+API should run in the background.
+
 Point to your test configuration:
 ```sh
 export S3TEST_CONF=s3tests.conf
