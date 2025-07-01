@@ -35,25 +35,21 @@ class S3:
         continuation_token: Key | None = None,
         start_after: Key | None = None,
     ) -> xml.ListBucketResult:
-        try:
-            objects_info = await self.store.list_objects_v2(
-                bucket,
-                prefix=prefix,
-                delimiter=delimiter,
-                max_keys=max_keys,
-                continuation_token=continuation_token,
-                start_after=start_after,
-            )
-            return self._build_list_bucket_result(
-                bucket,
-                objects_info,
-                prefix=prefix,
-                delimiter=delimiter,
-                max_keys=max_keys,
-            )
-        except exceptions.NoSuchBucket:
-            logger.info("Bucket %s not found", bucket)
-            raise HTTPException(status_code=404, detail="The specified bucket does not exist.")
+        objects_info = await self.store.list_objects_v2(
+            bucket,
+            prefix=prefix,
+            delimiter=delimiter,
+            max_keys=max_keys,
+            continuation_token=continuation_token,
+            start_after=start_after,
+        )
+        return self._build_list_bucket_result(
+            bucket,
+            objects_info,
+            prefix=prefix,
+            delimiter=delimiter,
+            max_keys=max_keys,
+        )
 
     async def list_objects(
         self,
@@ -63,20 +59,16 @@ class S3:
         max_keys: MaxKeys = 1000,
         marker: Key | None = None,
     ) -> xml.ListBucketResult:
-        try:
-            objects_info = await self.store.list_objects(
-                bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker
-            )
-            return self._build_list_bucket_result(
-                bucket,
-                objects_info,
-                prefix=prefix,
-                delimiter=delimiter,
-                max_keys=max_keys,
-            )
-        except exceptions.NoSuchBucket:
-            logger.info("Bucket %s not found", bucket)
-            raise HTTPException(status_code=404, detail="The specified bucket does not exist.")
+        objects_info = await self.store.list_objects(
+            bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker
+        )
+        return self._build_list_bucket_result(
+            bucket,
+            objects_info,
+            prefix=prefix,
+            delimiter=delimiter,
+            max_keys=max_keys,
+        )
 
     def _build_list_bucket_result(
         self,
@@ -116,12 +108,7 @@ class S3:
         key: Key,
         range_header: str | None = None,
     ) -> StreamingResponse:
-        try:
-            obj = await self.store.get_object(bucket, key)
-        except exceptions.NoSuchBucket:
-            raise HTTPException(status_code=404, detail="Bucket not found")
-        except exceptions.NoSuchKey:
-            raise HTTPException(status_code=404, detail="Object not found")
+        obj = await self.store.get_object(bucket, key)
         data = obj.data
         metadata = obj.info
         start = 0
@@ -164,12 +151,7 @@ class S3:
         )
 
     async def head_object(self, bucket: BucketName, key: Key) -> Response:
-        try:
-            metadata = await self.store.head_object(bucket, key)
-        except exceptions.NoSuchBucket:
-            raise HTTPException(status_code=404, detail="Bucket not found")
-        except exceptions.NoSuchKey:
-            raise HTTPException(status_code=404, detail="Object not found")
+        metadata = await self.store.head_object(bucket, key)
         return Response(
             status_code=200,
             headers={
