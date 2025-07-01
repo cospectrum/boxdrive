@@ -47,6 +47,7 @@ disable_error_code = ["empty-body"]
 
 [tool.ruff]
 line-length = 120
+extend-exclude = ["third_party"]
 
 [tool.ruff.lint]
 ignore = [
