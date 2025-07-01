@@ -1,8 +1,8 @@
 import asyncio
 import os
 import random
-from collections.abc import AsyncIterator, Coroutine, Callable
-from typing import Any, Awaitable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from typing import Any
 
 import httpx
 import pytest
