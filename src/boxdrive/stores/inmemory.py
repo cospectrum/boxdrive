@@ -52,7 +52,7 @@ class InMemoryStore(ObjectStore):
         common_prefixes = set()
         plen = len(prefix)
         for obj in objects:
-            assert obj.key.startswith(prefix), "all objects must be filtered by prefix"
+            assert obj.key.startswith(prefix), "all objects must be filtered by prefix before splitting"
             key = obj.key[plen:]
             if delimiter in key:
                 idx = key.index(delimiter)
@@ -144,12 +144,14 @@ class InMemoryStore(ObjectStore):
 
         return ListObjectsV2Info(objects=objects, is_truncated=is_truncated, common_prefixes=common_prefixes)
 
-    async def get_object(self, bucket_name: str, key: Key) -> Object | None:
-        """Get an object by bucket and key."""
+    async def get_object(self, bucket_name: str, key: Key) -> Object:
         bucket = self.buckets.get(bucket_name)
         if bucket is None:
-            return None
-        return bucket.objects.get(key)
+            raise exceptions.NoSuchBucket
+        obj = bucket.objects.get(key)
+        if obj is None:
+            raise exceptions.NoSuchKey
+        return obj
 
     async def put_object(
         self, bucket_name: str, key: Key, data: bytes, content_type: ContentType | None = None
@@ -180,12 +182,11 @@ class InMemoryStore(ObjectStore):
         except KeyError:
             raise exceptions.NoSuchKey
 
-    async def head_object(self, bucket_name: str, key: Key) -> ObjectInfo | None:
-        """Get object info without downloading the content."""
+    async def head_object(self, bucket_name: str, key: Key) -> ObjectInfo:
         bucket = self.buckets.get(bucket_name)
         if bucket is None:
-            return None
-        try:
-            return bucket.objects[key].info
-        except KeyError:
-            return None
+            raise exceptions.NoSuchBucket
+        obj = bucket.objects.get(key)
+        if obj is None:
+            raise exceptions.NoSuchKey
+        return obj.info
