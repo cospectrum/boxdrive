@@ -1,5 +1,5 @@
-name: 'Common Project Setup'
-description: 'Checkout, setup Python, install uv, and install dependencies'
+name: Common Project Setup
+description: Setup Python, install uv, and install dependencies
 inputs:
   python-version:
     required: false
@@ -8,9 +8,8 @@ inputs:
     required: false
     default: '0.7.14'
 runs:
-  using: 'composite'
+  using: composite
   steps:
-    - uses: actions/checkout@v4
     - name: Install uv
       uses: astral-sh/setup-uv@v6
       with:
