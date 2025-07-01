@@ -6,7 +6,8 @@ import time
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from .exceptions import NoSuchBucket, NoSuchKey, BucketAlreadyExists
+
+from .exceptions import BucketAlreadyExists, NoSuchBucket, NoSuchKey
 
 logger = logging.getLogger(__name__)
 
@@ -56,11 +57,17 @@ class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
         except NoSuchBucket:
-            return JSONResponse(status_code=404, content={"error": "NoSuchBucket", "message": "The specified bucket does not exist."})
+            return JSONResponse(
+                status_code=404, content={"error": "NoSuchBucket", "message": "The specified bucket does not exist."}
+            )
         except NoSuchKey:
-            return JSONResponse(status_code=404, content={"error": "NoSuchKey", "message": "The specified key does not exist."})
+            return JSONResponse(
+                status_code=404, content={"error": "NoSuchKey", "message": "The specified key does not exist."}
+            )
         except BucketAlreadyExists:
-            return JSONResponse(status_code=409, content={"error": "BucketAlreadyExists", "message": "Bucket already exists."})
+            return JSONResponse(
+                status_code=409, content={"error": "BucketAlreadyExists", "message": "Bucket already exists."}
+            )
         except Exception as exc:
             logger.exception("internal error")
             detail = f"Internal Server Error {type(exc)}"
