@@ -16,7 +16,7 @@ async def async_client():
 async def test_concurrent_put_and_get(async_client):
     BUCKET = "concurrent-bucket-put-get"
     KEYS = [f"file_{i}.txt" for i in range(10)]
-    NUM_OPS = 100
+    NUM_OPS = 500
     await async_client.put(f"/{BUCKET}")
 
     async def put_object(key: str):
@@ -46,7 +46,7 @@ async def test_concurrent_put_and_get(async_client):
 async def test_concurrent_delete_and_head(async_client):
     BUCKET = "concurrent-bucket-delete-head"
     KEYS = [f"file_{i}.txt" for i in range(10)]
-    NUM_OPS = 100
+    NUM_OPS = 500
     await async_client.put(f"/{BUCKET}")
     for key in KEYS:
         await async_client.put(
@@ -77,7 +77,7 @@ async def test_concurrent_delete_and_head(async_client):
 async def test_concurrent_put_and_list(async_client):
     BUCKET = "concurrent-bucket-put-list"
     KEYS = [f"file_{i}.txt" for i in range(10)]
-    NUM_OPS = 100
+    NUM_OPS = 500
     await async_client.put(f"/{BUCKET}")
 
     async def put_object(key: str):
@@ -106,7 +106,7 @@ async def test_concurrent_put_and_list(async_client):
 @pytest.mark.asyncio
 async def test_concurrent_bucket_create_and_list(async_client):
     BUCKETS = [f"concurrent-bucket-{i}" for i in range(10)]
-    NUM_OPS = 50
+    NUM_OPS = 500
 
     async def create_bucket(bucket: str):
         for _ in range(NUM_OPS):
