@@ -101,17 +101,17 @@ class MyCustomStore(ObjectStore):
 
 unit:
 ```bash
-uv run pytest/unit
+uv run pytest tests/unit
 ```
 
 e2e:
 ```bash
 # start server
-uv run fastapi dev src/boxdrive/main.py --port 8000
+uv run fastapi dev examples/inmemory.py --port 8000
 export S3_ENDPOINT_URL=http://127.0.0.1:8000
 
 # run e2e tests
-uv run run pytest/e2e
+uv run run pytest tests/e2e
 ```
 
 ### Code Quality

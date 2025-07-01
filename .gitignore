@@ -212,3 +212,4 @@ __marimo__/
 .DS_Store
 pyrightconfig.json
 third_party/
+tmp/
