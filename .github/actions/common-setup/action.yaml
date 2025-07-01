@@ -21,4 +21,5 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
     - name: Install the project
+      shell: bash
       run: uv sync --all-packages --locked 
