@@ -23,46 +23,46 @@ class XMLResponse(Response):
                 raise ValueError(f"Expected None or BaseXmlModel, got {type(content)}")
 
 
-class OwnerXml(BaseXmlModel, tag="Owner"):
-    ID: str = element(tag="ID")
-    DisplayName: str = element(tag="DisplayName")
+class Owner(BaseXmlModel):
+    id: str = element(tag="ID")
+    display_name: str = element(tag="DisplayName")
 
 
-class BucketXml(BaseXmlModel, tag="Bucket"):
-    Name: str = element(tag="Name")
-    CreationDate: str = element(tag="CreationDate")
+class Bucket(BaseXmlModel):
+    name: str = element(tag="Name")
+    creation_date: str = element(tag="CreationDate")
 
 
-class BucketsXml(BaseXmlModel, tag="Buckets"):
-    Bucket: list[BucketXml] = element(tag="Bucket")
+class Buckets(BaseXmlModel):
+    buckets: list[Bucket] = element(tag="Bucket")
 
 
-class ListAllMyBucketsResultXml(BaseXmlModel, tag="ListAllMyBucketsResult"):
+class ListAllMyBucketsResult(BaseXmlModel):
     xmlns: str = attr(default=constants.S3_XML_NAMESPACE)
-    Owner: OwnerXml = element(tag="Owner")
-    Buckets: BucketsXml = element(tag="Buckets")
+    owner: Owner = element(tag="Owner")
+    buckets: Buckets = element(tag="Buckets")
 
 
-class OwnerShortXml(BaseXmlModel, tag="Owner"):
-    ID: str = element(tag="ID")
-    DisplayName: str = element(tag="DisplayName")
+class Content(BaseXmlModel):
+    key: str = element(tag="Key")
+    last_modified: str = element(tag="LastModified")
+    etag: str = element(tag="ETag")
+    size: int = element(tag="Size")
+    storage_class: str = element(tag="StorageClass")
+    owner: Owner = element(tag="Owner")
 
 
-class ContentsXml(BaseXmlModel, tag="Contents"):
-    Key: str = element(tag="Key")
-    LastModified: str = element(tag="LastModified")
-    ETag: str = element(tag="ETag")
-    Size: int = element(tag="Size")
-    StorageClass: str = element(tag="StorageClass")
-    Owner: OwnerShortXml = element(tag="Owner")
+class CommonPrefix(BaseXmlModel):
+    prefix: str = element(tag="Prefix")
 
 
-class ListBucketResultXml(BaseXmlModel, tag="ListBucketResult"):
+class ListBucketResult(BaseXmlModel):
     xmlns: str = attr(default=constants.S3_XML_NAMESPACE)
-    Name: str = element(tag="Name")
-    Prefix: str = element(tag="Prefix")
-    MaxKeys: int = element(tag="MaxKeys")
-    KeyCount: int = element(tag="KeyCount")
-    IsTruncated: bool = element(tag="IsTruncated")
-    Delimiter: str | None = element(tag="Delimiter", default=None)
-    Contents: list[ContentsXml] = element(tag="Contents")
+    name: str = element(tag="Name")
+    prefix: str = element(tag="Prefix")
+    max_keys: int = element(tag="MaxKeys")
+    key_count: int = element(tag="KeyCount")
+    is_truncated: bool = element(tag="IsTruncated")
+    delimiter: str | None = element(tag="Delimiter", default=None)
+    contents: list[Content] = element(tag="Contents")
+    common_prefixes: list[CommonPrefix] = element(tag="CommonPrefixes")

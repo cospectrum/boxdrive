@@ -1,6 +1,6 @@
 [project]
 name = "boxdrive"
-version = "0.0.1"
+version = "0.0.2"
 description = "S3-compatible API with Abstract Object Store in Python (FastAPI)."
 readme = "README.md"
 authors = [{ name = "Alex Severin", email = "severinalexeyv@gmail.com" }]
@@ -8,7 +8,6 @@ requires-python = ">=3.10"
 dependencies = [
     "fastapi[standard]>=0.115.14",
     "pydantic>=2.11.7",
-    "httpx>=0.24.0",
     "pydantic-xml>=2.17.2",
     "opentelemetry-instrumentation-logging>=0.55b1",
     "opentelemetry-instrumentation-fastapi>=0.55b1",
@@ -18,6 +17,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "boto3>=1.38.46",
+    "httpx>=0.28.1",
     "mypy>=1.16.1",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.0.0",

@@ -4,7 +4,7 @@ import datetime
 import re
 from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel
+from pydantic import AfterValidator, BaseModel, Field
 
 
 def validate_bucket_name(value: str) -> str:
@@ -107,6 +107,7 @@ class Object(BaseModel):
 class ListObjectsInfo(BaseModel):
     objects: list[ObjectInfo]
     is_truncated: bool
+    common_prefixes: list[str] = Field(default_factory=list)
 
 
 ListObjectsV2Info = ListObjectsInfo
