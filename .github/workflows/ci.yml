@@ -15,6 +15,7 @@ jobs:
   format:
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/common-setup
       - name: ruff format
         run: uv run ruff format --check
