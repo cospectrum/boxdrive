@@ -1,7 +1,8 @@
-from typing import Any
-import httpx
 import urllib.parse
-from boxdrive.store import ObjectStore
+
+import httpx
+
+from boxdrive.exceptions import BucketAlreadyExists
 from boxdrive.schemas import (
     BucketInfo,
     BucketName,
@@ -13,12 +14,20 @@ from boxdrive.schemas import (
     Object,
     ObjectInfo,
 )
-from boxdrive.exceptions import BucketAlreadyExists
+from boxdrive.store import ObjectStore
+
 
 class GitlabStore(ObjectStore):
     """Object store implementation backed by a GitLab repository branch via the GitLab API."""
 
-    def __init__(self, repo_id: str, token: str, branch: str, api_url: str = "https://gitlab.com/api/v4", placeholder_name: str = ".gitkeep"):
+    def __init__(
+        self,
+        repo_id: str,
+        token: str,
+        branch: str,
+        api_url: str = "https://gitlab.com/api/v4",
+        placeholder_name: str = ".gitkeep",
+    ):
         """Initialize the GitLab store with repository, token, branch, and placeholder file name."""
         self.repo_id = repo_id
         self.token = token
