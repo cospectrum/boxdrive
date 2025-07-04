@@ -23,3 +23,6 @@ runs:
     - name: Install the project
       shell: bash
       run: uv sync --all-packages --locked 
+    - name: Print python version
+      shell: bash
+      run: uv run python --version

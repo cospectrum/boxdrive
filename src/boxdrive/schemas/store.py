@@ -110,4 +110,5 @@ class ListObjectsInfo(BaseModel):
     common_prefixes: list[str] = Field(default_factory=list)
 
 
-ListObjectsV2Info = ListObjectsInfo
+class ListObjectsV2Info(ListObjectsInfo):
+    pass
