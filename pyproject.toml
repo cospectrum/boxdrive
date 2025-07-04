@@ -4,7 +4,7 @@ version = "0.0.2"
 description = "S3-compatible API with Abstract Object Store in Python (FastAPI)."
 readme = "README.md"
 authors = [{ name = "Alex Severin", email = "severinalexeyv@gmail.com" }]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi[standard]>=0.115.14",
     "pydantic>=2.11.7",
