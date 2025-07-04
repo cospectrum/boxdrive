@@ -9,8 +9,8 @@ from opentelemetry.sdk.resources import SERVICE_NAME, SERVICE_VERSION, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import set_tracer_provider
 
+from . import middleware
 from .handlers import router
-from .middleware import ExceptionHandlerMiddleware, RequestLoggingMiddleware
 from .store import ObjectStore
 from .version import __version__
 
@@ -27,8 +27,9 @@ def create_app(store: ObjectStore) -> FastAPI:
     app = FastAPI(title="BoxDrive", description="S3-compatible object store API", version=__version__)
     app.state.store = store
 
-    app.add_middleware(RequestLoggingMiddleware)
-    app.add_middleware(ExceptionHandlerMiddleware)
+    app.add_middleware(middleware.Recover)
+    app.add_middleware(middleware.LogInfo)
+    app.add_middleware(middleware.InjectOtelContextIntoResponse)
 
     app.include_router(router)
 
@@ -41,7 +42,7 @@ def setup_opentelemetry(app: FastAPI) -> None:
         attributes={
             SERVICE_NAME: app.title,
             SERVICE_VERSION: app.version,
-        }
+        },
     )
     trace_provider = TracerProvider(resource=resource)
     set_tracer_provider(trace_provider)

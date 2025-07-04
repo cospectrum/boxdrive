@@ -4,7 +4,7 @@ inputs:
   python-version:
     description: which python to install
     required: false
-    default: '3.10'
+    default: '3.11'
   uv-version:
     description: which uv to use
     required: false
@@ -23,3 +23,6 @@ runs:
     - name: Install the project
       shell: bash
       run: uv sync --all-packages --locked 
+    - name: Print python version
+      shell: bash
+      run: uv run python --version

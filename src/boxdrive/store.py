@@ -8,6 +8,7 @@ from .schemas import (
     ContentType,
     Key,
     ListObjectsInfo,
+    ListObjectsV2Info,
     MaxKeys,
     Object,
     ObjectInfo,
@@ -56,7 +57,7 @@ class ObjectStore(ABC):
         max_keys: MaxKeys = 1000,
         prefix: Key | None = None,
         start_after: Key | None = None,
-    ) -> ListObjectsInfo:
+    ) -> ListObjectsV2Info:
         """List objects in a bucket."""
         pass
 
