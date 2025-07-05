@@ -1,4 +1,7 @@
+import logging
+import os
 import urllib.parse
+from typing import NoReturn
 
 import httpx
 
@@ -16,65 +19,89 @@ from boxdrive.schemas import (
 )
 from boxdrive.store import ObjectStore
 
+logger = logging.getLogger(__name__)
+
 
 class GitlabStore(ObjectStore):
     """Object store implementation backed by a GitLab repository branch via the GitLab API."""
 
     def __init__(
         self,
-        repo_id: str,
-        token: str,
+        repo_id: int,
         branch: str,
-        api_url: str = "https://gitlab.com/api/v4",
+        *,
+        access_token: str,
+        api_url: str = "https://gitlab.com/api/v4/",
         placeholder_name: str = ".gitkeep",
     ):
         """Initialize the GitLab store with repository, token, branch, and placeholder file name."""
         self.repo_id = repo_id
-        self.token = token
         self.branch = branch
         self.api_url = api_url
         self.placeholder_name = placeholder_name
-        self.client = httpx.AsyncClient(headers={"PRIVATE-TOKEN": token})
+        self.client = httpx.AsyncClient(
+            headers={
+                "Authorization": f"Bearer {access_token}",
+            },
+        )
 
     async def list_buckets(self) -> list[BucketInfo]:
         """List all buckets in the store."""
         raise NotImplementedError
 
-    async def _bucket_exists(self, bucket_name: BucketName) -> bool:
-        """Return True if any file exists under the bucket directory on the branch."""
-        tree_url = f"{self.api_url}/projects/{self.repo_id}/repository/tree"
-        params = {"path": bucket_name, "ref": self.branch}
-        resp = await self.client.get(tree_url, params=params)
-        resp.raise_for_status()
-        return bool(resp.json())
+    def _raise_with_response(self, resp: httpx.Response) -> NoReturn:
+        raise httpx.HTTPStatusError(
+            f"gitlab error ({resp.status_code}): {resp.text}",
+            request=resp.request,
+            response=resp,
+        )
 
-    async def _object_exists(self, bucket_name: BucketName, key: Key) -> bool:
-        """Return True if the object exists in the bucket on the branch."""
-        file_path = f"{bucket_name}/{key}"
-        file_url = f"{self.api_url}/projects/{self.repo_id}/repository/files/{urllib.parse.quote(file_path, safe='')}"
+    async def _file_exists(self, file_path: str) -> bool:
+        """Return True if the file exists in the repository on the branch."""
+        assert not file_path.startswith("/"), "file_path must not start with a slash"
+        file_path = urllib.parse.quote_plus(file_path)
+        file_url = os.path.join(self.api_url, "projects", str(self.repo_id), "repository/files", file_path)
         params = {"ref": self.branch}
-        resp = await self.client.get(file_url, params=params)
+        resp = await self.client.head(file_url, params=params)
         if resp.status_code == 200:
             return True
         if resp.status_code == 404:
             return False
-        resp.raise_for_status()
-        return False
+        self._raise_with_response(resp)
+
+    async def _object_exists(self, bucket_name: BucketName, key: Key) -> bool:
+        """Return True if the object exists in the bucket on the branch."""
+        file_path = f"{bucket_name}/{key}"
+        return await self._file_exists(file_path)
+
+    async def _bucket_exists(self, bucket_name: BucketName) -> bool:
+        """Return True if any file exists under the bucket directory on the branch."""
+        url = os.path.join(self.api_url, "projects", str(self.repo_id), "repository/tree")
+        params = {"ref": self.branch, "path": bucket_name}
+        resp = await self.client.get(url, params=params)
+        if resp.status_code == 200:
+            return True
+        if resp.status_code == 404:
+            return False
+        self._raise_with_response(resp)
 
     async def create_bucket(self, bucket_name: BucketName) -> None:
         """Create a new bucket in the store by adding a placeholder file to the bucket directory."""
-        if await self._bucket_exists(bucket_name):
-            raise BucketAlreadyExists
         file_path = f"{bucket_name}/{self.placeholder_name}"
-        file_url = f"{self.api_url}/projects/{self.repo_id}/repository/files/{urllib.parse.quote(file_path, safe='')}"
+        file_path = urllib.parse.quote_plus(file_path)
+        file_url = os.path.join(self.api_url, "projects", str(self.repo_id), "repository/files", file_path)
         data = {
             "branch": self.branch,
-            "content": "placeholder",
-            "commit_message": f"Create bucket {bucket_name} with placeholder",
+            "content": "",
+            "commit_message": f"create bucket {bucket_name}",
         }
-        put_resp = await self.client.post(file_url, json=data)
-        if put_resp.status_code != 201:
-            raise RuntimeError(f"Failed to create bucket: {put_resp.text}")
+        resp = await self.client.post(file_url, json=data)
+        if resp.status_code == 201:
+            return
+        if resp.status_code == 400:
+            logger.info("gitlab 400 response: %s", resp.text)
+            raise BucketAlreadyExists
+        self._raise_with_response(resp)
 
     async def delete_bucket(self, bucket_name: BucketName) -> None:
         """Delete a bucket from the store."""
