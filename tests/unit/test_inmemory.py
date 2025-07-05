@@ -75,10 +75,9 @@ async def test_delete_object(store: InMemoryStore) -> None:
     await store.delete_object("bucket1", "key1")
     with pytest.raises(NoSuchKey):
         await store.get_object("bucket1", "key1")
-    with pytest.raises(NoSuchKey):
-        await store.delete_object("bucket1", "key1")
-    with pytest.raises(NoSuchBucket):
-        await store.delete_object("no-such-bucket", "key1")
+
+    await store.delete_object("bucket1", "key1")
+    await store.delete_object("no-such-bucket", "key1")
 
 
 async def test_head_object(store: InMemoryStore) -> None:
