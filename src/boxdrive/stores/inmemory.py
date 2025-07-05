@@ -175,15 +175,15 @@ class InMemoryStore(ObjectStore):
         bucket.objects[key] = obj
         return info
 
-    async def delete_object(self, bucket_name: str, key: Key) -> ObjectInfo:
+    async def delete_object(self, bucket_name: str, key: Key) -> None:
         """Delete an object from a bucket."""
         bucket = self.buckets.get(bucket_name)
         if bucket is None:
             raise exceptions.NoSuchBucket
         try:
-            return bucket.objects.pop(key).info
+            del bucket.objects[key]
         except KeyError:
-            raise exceptions.NoSuchKey
+            pass
 
     async def head_object(self, bucket_name: str, key: Key) -> ObjectInfo:
         bucket = self.buckets.get(bucket_name)

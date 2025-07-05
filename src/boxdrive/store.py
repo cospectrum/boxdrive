@@ -74,8 +74,8 @@ class ObjectStore(ABC):
         pass
 
     @abstractmethod
-    async def delete_object(self, bucket_name: BucketName, key: Key) -> ObjectInfo:
-        """Delete an object from a bucket and return its info."""
+    async def delete_object(self, bucket_name: BucketName, key: Key) -> None:
+        """Delete an object from a bucket."""
         pass
 
     @abstractmethod
