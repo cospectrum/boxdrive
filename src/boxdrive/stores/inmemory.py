@@ -7,20 +7,27 @@ import logging
 from pydantic import BaseModel
 
 from boxdrive import exceptions
-from boxdrive.schemas.store import ListObjectsV2Info
 
 from .. import constants
 from ..schemas import (
     BucketInfo,
     BucketName,
     ContentType,
+    ETag,
     Key,
     ListObjectsInfo,
+    ListObjectsV2Info,
     MaxKeys,
     Object,
     ObjectInfo,
 )
 from ..store import ObjectStore
+from ._utils import filter_objects, filter_objects_v2
+
+
+def get_etag(data: bytes) -> ETag:
+    return hashlib.md5(data).hexdigest()
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,27 +50,6 @@ class InMemoryStore(ObjectStore):
 
     def __init__(self, *, buckets: Buckets | None = None) -> None:
         self.buckets = buckets or {}
-
-    @staticmethod
-    def _split_contents_and_prefixes(
-        objects: list[ObjectInfo], *, prefix: Key | None, delimiter: str | None
-    ) -> tuple[list[ObjectInfo], list[str]]:
-        prefix = prefix or ""
-        if not delimiter:
-            return objects, []
-        contents = []
-        common_prefixes = set()
-        plen = len(prefix)
-        for obj in objects:
-            assert obj.key.startswith(prefix), "all objects must be filtered by prefix before splitting"
-            key = obj.key[plen:]
-            if delimiter in key:
-                idx = key.index(delimiter)
-                common_prefix = obj.key[: plen + idx + len(delimiter)]
-                common_prefixes.add(common_prefix)
-            else:
-                contents.append(obj)
-        return contents, sorted(common_prefixes)
 
     async def list_buckets(self) -> list[BucketInfo]:
         """List all buckets in the store."""
@@ -100,21 +86,8 @@ class InMemoryStore(ObjectStore):
         bucket = self.buckets.get(bucket_name)
         if bucket is None:
             raise exceptions.NoSuchBucket
-
         objects = [obj.info for obj in bucket.objects.values()]
-        if prefix:
-            objects = [obj for obj in objects if obj.key.startswith(prefix)]
-
-        objects = sorted(objects, key=lambda obj: obj.key)
-        if marker:
-            objects = [obj for obj in objects if obj.key > marker]
-
-        objects, common_prefixes = self._split_contents_and_prefixes(objects, prefix=prefix, delimiter=delimiter)
-
-        is_truncated = len(objects) > max_keys
-        objects = objects[:max_keys]
-
-        return ListObjectsInfo(objects=objects, is_truncated=is_truncated, common_prefixes=common_prefixes)
+        return filter_objects(objects, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker)
 
     async def list_objects_v2(
         self,
@@ -130,22 +103,16 @@ class InMemoryStore(ObjectStore):
         bucket = self.buckets.get(bucket_name)
         if bucket is None:
             raise exceptions.NoSuchBucket
-
         objects = [obj.info for obj in bucket.objects.values()]
-        if prefix:
-            objects = [obj for obj in objects if obj.key.startswith(prefix)]
-        objects = sorted(objects, key=lambda obj: obj.key)
-
-        after = continuation_token or start_after
-        if after:
-            objects = [obj for obj in objects if obj.key > after]
-
-        objects, common_prefixes = self._split_contents_and_prefixes(objects, prefix=prefix, delimiter=delimiter)
-
-        is_truncated = len(objects) > max_keys
-        objects = objects[:max_keys]
-
-        return ListObjectsV2Info(objects=objects, is_truncated=is_truncated, common_prefixes=common_prefixes)
+        return filter_objects_v2(
+            objects,
+            continuation_token=continuation_token,
+            delimiter=delimiter,
+            encoding_type=encoding_type,
+            max_keys=max_keys,
+            prefix=prefix,
+            start_after=start_after,
+        )
 
     async def get_object(self, bucket_name: str, key: Key) -> Object:
         bucket = self.buckets.get(bucket_name)
@@ -163,7 +130,7 @@ class InMemoryStore(ObjectStore):
         if bucket_name not in self.buckets:
             await self.create_bucket(bucket_name)
 
-        etag = hashlib.md5(data).hexdigest()
+        etag = get_etag(data)
         now = datetime.datetime.now(datetime.UTC)
         final_content_type = content_type or constants.DEFAULT_CONTENT_TYPE
         info = ObjectInfo(key=key, size=len(data), last_modified=now, etag=etag, content_type=final_content_type)
