@@ -1,4 +1,4 @@
-from boxdrive import Key, ListObjectsInfo, ListObjectsV2Info, MaxKeys, ObjectInfo
+from boxdrive.schemas import Key, ListObjectsInfo, ListObjectsV2Info, MaxKeys, ObjectInfo
 
 
 def filter_objects(

@@ -19,8 +19,8 @@ from boxdrive.schemas import (
 )
 from boxdrive.schemas.store import validate_bucket_name, validate_key
 from boxdrive.store import ObjectStore
-from boxdrive.stores._utils import filter_objects, filter_objects_v2
 
+from .._utils import filter_objects, filter_objects_v2
 from .client import CreateFile, DeleteFile, File, GitlabClient, TreeParams, raise_for_gitlab_response
 
 logger = logging.getLogger(__name__)
