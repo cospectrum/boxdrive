@@ -26,6 +26,19 @@ async def test_lock(repeat: int) -> None:
         assert_key_is_not_locked(kv, key)
 
 
+async def test_lock_finally() -> None:
+    kv = Keysmith()
+
+    key = "a"
+    with pytest.raises(ValueError):
+        async with kv.lock(key):
+            assert_key_is_locked(kv, key)
+            assert kv._count_locks == 1
+            raise ValueError
+    assert_key_is_not_locked(kv, key)
+    assert kv._count_locks == 0
+
+
 @pytest.mark.parametrize(
     ["repeat"],
     [
