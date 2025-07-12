@@ -2,9 +2,11 @@
 
 import logging
 import time
+from typing import Any
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
+from opentelemetry.propagate import inject
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from .exceptions import BucketAlreadyExists, NoSuchBucket, NoSuchKey
@@ -12,7 +14,7 @@ from .exceptions import BucketAlreadyExists, NoSuchBucket, NoSuchKey
 logger = logging.getLogger(__name__)
 
 
-class RequestLoggingMiddleware(BaseHTTPMiddleware):
+class LogInfo(BaseHTTPMiddleware):
     """Middleware to log request and response information."""
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -49,7 +51,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         return response
 
 
-class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
+class Recover(BaseHTTPMiddleware):
     """Middleware to handle exceptions globally and provide consistent error responses."""
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -79,3 +81,13 @@ class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
                     "detail": detail,
                 },
             )
+
+
+class InjectOtelContextIntoResponse(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        response = await call_next(request)
+        carrier: dict[Any, Any] = {}
+        inject(carrier)
+        for key, value in carrier.items():
+            response.headers.append(key, value)
+        return response

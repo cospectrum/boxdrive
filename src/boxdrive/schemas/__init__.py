@@ -1,5 +1,6 @@
 from . import xml as xml
 from .store import (
+    BaseListObjectsInfo,
     BucketInfo,
     BucketName,
     ContentType,
@@ -13,6 +14,7 @@ from .store import (
 )
 
 __all__ = [
+    "BaseListObjectsInfo",
     "BucketName",
     "Key",
     "ETag",
