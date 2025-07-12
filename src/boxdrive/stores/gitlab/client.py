@@ -10,10 +10,6 @@ from pydantic import BaseModel, PositiveInt
 logger = logging.getLogger(__name__)
 
 
-class File(BaseModel):
-    content: str
-
-
 class FileHead(BaseModel):
     gitlab_size: int
     gitlab_content_sha256: str
@@ -92,14 +88,6 @@ class GitlabClient:
         file_path = urllib.parse.quote_plus(file_path)
         file_url = os.path.join(self.api_url, "projects", str(self.repo_id), "repository/files", file_path)
         return await self.client.delete(file_url, params=params.model_dump(exclude_none=True))
-
-    async def get_file(self, file_path: str, *, ref: str) -> httpx.Response:
-        file_path = urllib.parse.quote_plus(file_path)
-        file_url = os.path.join(self.api_url, "projects", str(self.repo_id), "repository/files", file_path)
-        params = {
-            "ref": ref,
-        }
-        return await self.client.get(file_url, params=params)
 
     async def get_raw_file(self, file_path: str, *, ref: str) -> httpx.Response:
         file_path = urllib.parse.quote_plus(file_path)
