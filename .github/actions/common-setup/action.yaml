@@ -1,10 +1,6 @@
 name: Common Project Setup
 description: Setup Python, install uv, and install dependencies
 inputs:
-  python-version:
-    description: which python to install
-    required: false
-    default: '3.11'
   uv-version:
     description: which uv to use
     required: false
@@ -16,10 +12,6 @@ runs:
       uses: astral-sh/setup-uv@v6
       with:
         version: ${{ inputs.uv-version }}
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ inputs.python-version }}
     - name: Install the project
       shell: bash
       run: uv sync --all-packages --locked 
