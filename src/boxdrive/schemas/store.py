@@ -47,15 +47,6 @@ def validate_key(value: str) -> str:
     return value
 
 
-def validate_etag(value: str) -> str:
-    """Validate ETag format."""
-    # ETags are typically MD5 hashes (32 hex characters) optionally wrapped in quotes
-    if not re.match(r'^"?[a-fA-F0-9]{32}"?$', value):
-        raise ValueError("ETag must be a 32-character hexadecimal string, optionally wrapped in quotes")
-
-    return value
-
-
 def validate_content_type(value: str) -> str:
     """Validate content type format."""
     # Basic MIME type validation
@@ -77,7 +68,7 @@ def validate_max_keys(value: int) -> int:
 
 BucketName = Annotated[str, AfterValidator(validate_bucket_name)]
 Key = Annotated[str, AfterValidator(validate_key)]
-ETag = Annotated[str, AfterValidator(validate_etag)]
+ETag = str
 ContentType = Annotated[str, AfterValidator(validate_content_type)]
 MaxKeys = Annotated[int, AfterValidator(validate_max_keys)]
 

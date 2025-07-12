@@ -105,9 +105,8 @@ class GitlabStore(ObjectStore):
 
         async with self.keysmith.lock(bucket_name):
             keys = await self._fetch_object_keys(bucket_name, is_enough, per_page=per_page)
-            for batch in itertools.batched(keys, n=BATCH_SIZE):
-                coros = [self._delete_object(bucket_name, key) for key in batch]
-                await asyncio.gather(*coros)
+            for key in keys:
+                await self._delete_object(bucket_name, key)
 
     async def list_objects(
         self,
@@ -221,7 +220,7 @@ class GitlabStore(ObjectStore):
         """Delete an object from a bucket."""
         file_path = _object_path(bucket_name, key)
         params = DeleteFile(
-            ref=self.branch,
+            branch=self.branch,
             commit_message=f"delete object {file_path}",
         )
         resp = await self.gitlab_client.delete_file(file_path, params)

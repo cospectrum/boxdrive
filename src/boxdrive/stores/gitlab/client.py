@@ -20,15 +20,19 @@ class FileHead(BaseModel):
 
 
 class DeleteFile(BaseModel):
-    ref: str
+    branch: str
     commit_message: str = ""
     author_name: str | None = None
     author_email: str | None = None
 
 
-class CreateFile(DeleteFile):
+class CreateFile(BaseModel):
+    ref: str
     content: str = ""
     encoding: Literal["text", "base64"] | None = None
+    commit_message: str = ""
+    author_name: str | None = None
+    author_email: str | None = None
 
 
 class TreeParams(BaseModel):
