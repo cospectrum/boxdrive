@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 
@@ -32,15 +32,11 @@ class Keysmith:
 
     @asynccontextmanager
     async def lock_all(self) -> AsyncIterator[None]:
-        predicate: Callable[[], bool] = lambda: self._count_locks == 0
         async with self._master_lock:
             async with self._cv:
-                await self._cv.wait_for(predicate)
-                assert predicate()
+                await self._cv.wait_for(lambda: self._count_locks == 0)
                 self._clear()
             yield
-            assert predicate()
-            assert self._num_of_locked() == 0
 
     def _get_lock(self, key: str) -> asyncio.Lock:
         assert self._master_lock.locked()

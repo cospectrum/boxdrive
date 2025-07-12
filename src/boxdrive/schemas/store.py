@@ -6,6 +6,8 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, Field
 
+from boxdrive import constants
+
 
 def validate_bucket_name(value: str) -> str:
     """Validate S3 bucket name according to AWS rules."""
@@ -67,7 +69,7 @@ def validate_content_type(value: str) -> str:
 
 def validate_max_keys(value: int) -> int:
     """Validate max_keys parameter."""
-    in_range = 1 <= value <= 1000
+    in_range = 1 <= value <= constants.MAX_KEYS
     if not in_range:
         raise ValueError("max_keys must be between 1 and 1000")
     return value
@@ -104,11 +106,15 @@ class Object(BaseModel):
     info: ObjectInfo
 
 
-class ListObjectsInfo(BaseModel):
+class BaseListObjectsInfo(BaseModel):
     objects: list[ObjectInfo]
     is_truncated: bool
     common_prefixes: list[str] = Field(default_factory=list)
 
 
-class ListObjectsV2Info(ListObjectsInfo):
+class ListObjectsInfo(BaseListObjectsInfo):
+    pass
+
+
+class ListObjectsV2Info(BaseListObjectsInfo):
     pass

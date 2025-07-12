@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 
+from . import constants
 from .schemas import (
     BucketInfo,
     BucketName,
@@ -40,7 +41,7 @@ class ObjectStore(ABC):
         *,
         prefix: Key | None = None,
         delimiter: str | None = None,
-        max_keys: MaxKeys = 1000,
+        max_keys: MaxKeys = constants.MAX_KEYS,
         marker: Key | None = None,
     ) -> ListObjectsInfo:
         """List objects in a bucket."""
@@ -54,7 +55,7 @@ class ObjectStore(ABC):
         continuation_token: Key | None = None,
         delimiter: str | None = None,
         encoding_type: str | None = None,
-        max_keys: MaxKeys = 1000,
+        max_keys: MaxKeys = constants.MAX_KEYS,
         prefix: Key | None = None,
         start_after: Key | None = None,
     ) -> ListObjectsV2Info:

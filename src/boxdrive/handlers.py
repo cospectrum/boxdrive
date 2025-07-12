@@ -6,7 +6,10 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
 
-from . import dependencies as deps
+from . import (
+    constants,
+    dependencies as deps,
+)
 from .s3 import S3
 from .schemas import BucketName, ContentType, Key, MaxKeys
 from .schemas.xml import XMLResponse
@@ -32,7 +35,7 @@ async def list_objects(
     bucket: BucketName,
     prefix: Key | None = Query(None),
     delimiter: str | None = Query(None),
-    max_keys: MaxKeys = Query(1000, alias="max-keys"),
+    max_keys: MaxKeys = Query(constants.MAX_KEYS, alias="max-keys"),
     marker: Key | None = Query(None),
     continuation_token: Key | None = Query(None, alias="continuation-token"),
     start_after: Key | None = Query(None, alias="start-after"),
