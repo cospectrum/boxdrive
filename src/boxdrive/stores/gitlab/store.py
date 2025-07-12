@@ -25,7 +25,7 @@ from boxdrive.schemas.store import validate_bucket_name, validate_key
 from boxdrive.store import ObjectStore
 
 from .. import _utils
-from .client import CreateFile, DeleteFile, File, GitlabClient, TreeParams, raise_for_gitlab_response
+from .client import CreateFile, DeleteFile, GitlabClient, TreeParams, UpdateFile, raise_for_gitlab_response
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ class GitlabStore(ObjectStore):
         """Create a new bucket in the store by adding a placeholder file to the bucket directory."""
         file_path = _object_path(bucket_name, self.placeholder_name)
         body = CreateFile(
-            ref=self.branch,
+            branch=self.branch,
             commit_message=f"create bucket {bucket_name}",
         )
         async with self.keysmith.lock(bucket_name):
@@ -167,10 +167,9 @@ class GitlabStore(ObjectStore):
         if key == self.placeholder_name:
             raise exceptions.NoSuchKey
         file_path = _object_path(bucket_name, key)
-        resp = await self.gitlab_client.get_file(file_path, ref=self.branch)
+        resp = await self.gitlab_client.get_raw_file(file_path, ref=self.branch)
         if resp.status_code == 200:
-            body = File.model_validate_json(resp.content)
-            data = base64.b64decode(body.content)
+            data = resp.content
             return Object(
                 data=data,
                 info=ObjectInfo(
@@ -193,20 +192,36 @@ class GitlabStore(ObjectStore):
         file_path = _object_path(bucket_name, key)
         content = base64.b64encode(data).decode("utf-8")
         body = CreateFile(
-            ref=self.branch,
+            branch=self.branch,
             commit_message=f"put object {file_path}",
             content=content,
+            encoding="base64",
         )
         async with self.keysmith.lock(bucket_name):
-            resp = await self.gitlab_client.create_file(file_path, body)
-        if resp.status_code == 201:
-            return ObjectInfo(
+            obj = ObjectInfo(
                 key=key,
                 size=len(data),
                 last_modified=datetime.datetime.now(datetime.UTC),
                 etag=get_etag(data),
                 content_type=constants.DEFAULT_CONTENT_TYPE,
             )
+            resp = await self.gitlab_client.create_file(file_path, body)
+            if resp.status_code == 201:
+                return obj
+            if resp.status_code == 400:
+                logger.info("gitlab response (400): %s", resp.text)
+                await self._update_object(file_path, body)
+                return obj
+        raise_for_gitlab_response(resp)
+
+    async def _update_object(
+        self,
+        file_path: str,
+        body: UpdateFile,
+    ) -> None:
+        resp = await self.gitlab_client.update_file(file_path, body)
+        if resp.status_code == 200:
+            return
         raise_for_gitlab_response(resp)
 
     async def delete_object(self, bucket_name: BucketName, key: Key) -> None:

@@ -26,13 +26,13 @@ class DeleteFile(BaseModel):
     author_email: str | None = None
 
 
-class CreateFile(BaseModel):
-    ref: str
+class UpdateFile(DeleteFile):
     content: str = ""
     encoding: Literal["text", "base64"] | None = None
-    commit_message: str = ""
-    author_name: str | None = None
-    author_email: str | None = None
+
+
+class CreateFile(UpdateFile):
+    pass
 
 
 class TreeParams(BaseModel):
@@ -82,6 +82,12 @@ class GitlabClient:
         data = body.model_dump(exclude_none=True)
         return await self.client.post(file_url, json=data)
 
+    async def update_file(self, file_path: str, body: UpdateFile) -> httpx.Response:
+        file_path = urllib.parse.quote_plus(file_path)
+        file_url = os.path.join(self.api_url, "projects", str(self.repo_id), "repository/files", file_path)
+        data = body.model_dump(exclude_none=True)
+        return await self.client.put(file_url, json=data)
+
     async def delete_file(self, file_path: str, params: DeleteFile) -> httpx.Response:
         file_path = urllib.parse.quote_plus(file_path)
         file_url = os.path.join(self.api_url, "projects", str(self.repo_id), "repository/files", file_path)
@@ -90,6 +96,15 @@ class GitlabClient:
     async def get_file(self, file_path: str, *, ref: str) -> httpx.Response:
         file_path = urllib.parse.quote_plus(file_path)
         file_url = os.path.join(self.api_url, "projects", str(self.repo_id), "repository/files", file_path)
+        params = {
+            "ref": ref,
+        }
+        return await self.client.get(file_url, params=params)
+
+    async def get_raw_file(self, file_path: str, *, ref: str) -> httpx.Response:
+        file_path = urllib.parse.quote_plus(file_path)
+        file_url = os.path.join(self.api_url, "projects", str(self.repo_id), "repository/files", file_path)
+        file_url = os.path.join(file_url, "raw")
         params = {
             "ref": ref,
         }

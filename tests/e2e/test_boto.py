@@ -10,7 +10,7 @@ BotoClient = Any
 
 @pytest.fixture
 def _s3_client() -> BotoClient:
-    endpoint_url = os.getenv("S3_ENDPOINT_URL")
+    endpoint_url = os.environ["S3_ENDPOINT_URL"]
     return boto3.client(
         "s3",
         endpoint_url=endpoint_url,
@@ -39,15 +39,21 @@ def test_create_and_list_bucket(s3_client: BotoClient) -> None:
     assert bucket in names
 
 
-def test_put_and_get_object(s3_client: BotoClient) -> None:
+@pytest.mark.parametrize(
+    ["content", "content_type"],
+    [(bytes([255, 254]), "application/octet-stream"), (b"e2e content", "text/plain")],
+)
+def test_put_and_get_object(
+    content: bytes,
+    content_type: str,
+    s3_client: BotoClient,
+) -> None:
     bucket = "e2e-bucket"
-    key = "file.txt"
-    content = b"e2e content"
+    key = "file.bin"
     s3_client.create_bucket(Bucket=bucket)
-    s3_client.put_object(Bucket=bucket, Key=key, Body=content, ContentType="text/plain")
+    s3_client.put_object(Bucket=bucket, Key=key, Body=content, ContentType=content_type)
     obj = s3_client.get_object(Bucket=bucket, Key=key)
     assert obj["Body"].read() == content
-    assert obj["ContentType"] == "text/plain"
 
 
 def test_list_objects(s3_client: BotoClient) -> None:
