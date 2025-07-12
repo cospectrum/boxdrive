@@ -2,14 +2,15 @@ import pytest
 
 from boxdrive.exceptions import BucketAlreadyExists, NoSuchBucket, NoSuchKey
 from boxdrive.stores import InMemoryStore
+from boxdrive import ObjectStore
 
 
 @pytest.fixture
-def store() -> InMemoryStore:
+def store() -> ObjectStore:
     return InMemoryStore()
 
 
-async def test_list_buckets(store: InMemoryStore) -> None:
+async def test_list_buckets(store: ObjectStore) -> None:
     assert await store.list_buckets() == []
     await store.create_bucket("bucket1")
     buckets = await store.list_buckets()
@@ -23,13 +24,13 @@ async def test_list_buckets(store: InMemoryStore) -> None:
     assert set(bucket_names) == {"bucket1", "bucket2"}
 
 
-async def test_create_bucket(store: InMemoryStore) -> None:
+async def test_create_bucket(store: ObjectStore) -> None:
     await store.create_bucket("bucket1")
     with pytest.raises(BucketAlreadyExists):
         await store.create_bucket("bucket1")
 
 
-async def test_delete_bucket(store: InMemoryStore) -> None:
+async def test_delete_bucket(store: ObjectStore) -> None:
     await store.create_bucket("bucket1")
     await store.delete_bucket("bucket1")
     assert await store.list_buckets() == []
@@ -37,7 +38,7 @@ async def test_delete_bucket(store: InMemoryStore) -> None:
         await store.delete_bucket("bucket1")
 
 
-async def test_list_objects(store: InMemoryStore) -> None:
+async def test_list_objects(store: ObjectStore) -> None:
     await store.create_bucket("bucket1")
     await store.put_object("bucket1", "a.txt", b"a")
     await store.put_object("bucket1", "b.txt", b"b")
@@ -50,7 +51,7 @@ async def test_list_objects(store: InMemoryStore) -> None:
         await store.list_objects("no-such-bucket")
 
 
-async def test_get_object(store: InMemoryStore) -> None:
+async def test_get_object(store: ObjectStore) -> None:
     await store.create_bucket("bucket1")
     await store.put_object("bucket1", "key1", b"data")
     obj = await store.get_object("bucket1", "key1")
@@ -61,7 +62,7 @@ async def test_get_object(store: InMemoryStore) -> None:
         await store.get_object("no-such-bucket", "key1")
 
 
-async def test_put_object(store: InMemoryStore) -> None:
+async def test_put_object(store: ObjectStore) -> None:
     info = await store.put_object("bucket1", "key1", b"data", "text/plain")
     obj = await store.get_object("bucket1", "key1")
     assert info.etag == obj.info.etag
@@ -69,7 +70,7 @@ async def test_put_object(store: InMemoryStore) -> None:
     assert obj.info.content_type == "text/plain"
 
 
-async def test_delete_object(store: InMemoryStore) -> None:
+async def test_delete_object(store: ObjectStore) -> None:
     await store.create_bucket("bucket1")
     await store.put_object("bucket1", "key1", b"data")
     await store.delete_object("bucket1", "key1")
@@ -81,7 +82,7 @@ async def test_delete_object(store: InMemoryStore) -> None:
     await store.delete_object("bucket1", "no-such-key")
 
 
-async def test_head_object(store: InMemoryStore) -> None:
+async def test_head_object(store: ObjectStore) -> None:
     await store.create_bucket("bucket1")
     await store.put_object("bucket1", "key1", b"data")
     meta = await store.head_object("bucket1", "key1")
