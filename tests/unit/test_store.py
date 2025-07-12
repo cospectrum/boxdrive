@@ -1,8 +1,8 @@
 import pytest
 
+from boxdrive import ObjectStore
 from boxdrive.exceptions import BucketAlreadyExists, NoSuchBucket, NoSuchKey
 from boxdrive.stores import InMemoryStore
-from boxdrive import ObjectStore
 
 
 @pytest.fixture
