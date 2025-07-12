@@ -71,7 +71,7 @@ def validate_max_keys(value: int) -> int:
     """Validate max_keys parameter."""
     in_range = 1 <= value <= constants.MAX_KEYS
     if not in_range:
-        raise ValueError("max_keys must be between 1 and 1000")
+        raise ValueError(f"max_keys must be between 1 and {constants.MAX_KEYS}")
     return value
 
 
