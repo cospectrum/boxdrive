@@ -103,13 +103,15 @@ def _bucket_is_empty(bucket):
         break
     return is_empty
 
-@pytest.mark.boxdrive
+@pytest.mark.inmemory
+@pytest.mark.gitlab
 def test_bucket_list_empty():
     bucket = get_new_bucket_resource()
     is_empty = _bucket_is_empty(bucket)
     assert is_empty == True
 
-@pytest.mark.boxdrive
+@pytest.mark.inmemory
+@pytest.mark.gitlab
 @pytest.mark.list_objects_v2
 def test_bucket_list_distinct():
     bucket1 = get_new_bucket_resource()
@@ -153,7 +155,8 @@ def _get_prefixes(response):
         prefixes = [prefix['Prefix'] for prefix in prefix_list]
     return prefixes
 
-@pytest.mark.boxdrive
+@pytest.mark.inmemory
+@pytest.mark.gitlab
 @pytest.mark.fails_on_dbstore
 def test_bucket_list_many():
     bucket_name = _create_objects(keys=['foo', 'bar', 'baz'])
@@ -171,7 +174,8 @@ def test_bucket_list_many():
     assert response['IsTruncated'] == False
     assert keys == ['foo']
 
-@pytest.mark.boxdrive
+@pytest.mark.inmemory
+@pytest.mark.gitlab
 @pytest.mark.list_objects_v2
 @pytest.mark.fails_on_dbstore
 def test_bucket_listv2_many():
@@ -190,7 +194,8 @@ def test_bucket_listv2_many():
     assert response['IsTruncated'] == False
     assert keys == ['foo']
 
-@pytest.mark.boxdrive
+@pytest.mark.inmemory
+@pytest.mark.gitlab
 @pytest.mark.list_objects_v2
 def test_basic_key_count():
     client = get_client()
@@ -202,7 +207,7 @@ def test_basic_key_count():
     response1 = client.list_objects_v2(Bucket=bucket_name)
     assert response1['KeyCount'] == 5
 
-@pytest.mark.boxdrive
+@pytest.mark.inmemory
 def test_bucket_list_delimiter_basic():
     bucket_name = _create_objects(keys=['foo/bar', 'foo/bar/xyzzy', 'quux/thud', 'asdf'])
     client = get_client()
@@ -216,7 +221,7 @@ def test_bucket_list_delimiter_basic():
     assert len(prefixes) == 2
     assert prefixes == ['foo/', 'quux/']
 
-@pytest.mark.boxdrive
+@pytest.mark.inmemory
 @pytest.mark.list_objects_v2
 def test_bucket_listv2_delimiter_basic():
     bucket_name = _create_objects(keys=['foo/bar', 'foo/bar/xyzzy', 'quux/thud', 'asdf'])

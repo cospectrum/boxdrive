@@ -8,15 +8,16 @@
 S3-compatible API with **Abstract Object Store** in Python (FastAPI).
 Work in progress.
 
-## Installation
-
-```bash
-uv add boxdrive
-```
+## Built-in stores
+- `InMemoryStore`
+- `GitlabStore` (with some limitations)
 
 ## Quick Start
 
-### Basic Usage
+0. install `boxdrive` from [pypi](https://pypi.org/project/boxdrive/) using your favorite package manager:
+```bash
+uv add boxdrive
+```
 
 1. create `main.py`:
 ```python

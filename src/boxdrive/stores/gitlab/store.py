@@ -91,7 +91,7 @@ class GitlabStore(ObjectStore):
             logger.info("created bucket")
             return
         if resp.status_code == 400:
-            logger.info("gitlab response (400): %s", resp.text)
+            logger.info("gitlab create_file failed (400): %s", resp.text)
             raise exceptions.BucketAlreadyExists
         raise_for_gitlab_response(resp)
 
@@ -209,7 +209,7 @@ class GitlabStore(ObjectStore):
             if resp.status_code == 201:
                 return obj
             if resp.status_code == 400:
-                logger.info("gitlab response (400): %s", resp.text)
+                logger.info("gitlab create_file failed (400): %s", resp.text)
                 await self._update_object(file_path, body)
                 return obj
         raise_for_gitlab_response(resp)
@@ -242,7 +242,7 @@ class GitlabStore(ObjectStore):
         if resp.status_code == 204:
             return
         if resp.status_code == 400:
-            logger.info("gitlab response (400): %s", resp.text)
+            logger.info("gitlab delete_file failed (400): %s", resp.text)
             return
         raise_for_gitlab_response(resp)
 
