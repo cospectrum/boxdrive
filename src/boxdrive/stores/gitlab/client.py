@@ -100,17 +100,21 @@ class GitlabClient:
         }
         return await self.client.get(file_url, params=params)
 
-    async def head_file(self, file_path: str, *, ref: str) -> FileHead:
+    async def head_file(self, file_path: str, *, ref: str) -> FileHead | None:
         file_path = urllib.parse.quote_plus(file_path)
         file_url = os.path.join(self.api_url, "projects", str(self.repo_id), "repository/files", file_path)
         params = {
             "ref": ref,
         }
         resp = await self.client.head(file_url, params=params)
-        return FileHead(
-            gitlab_content_sha256=resp.headers["x-gitlab-content-sha256"],
-            gitlab_size=int(resp.headers["x-gitlab-size"]),
-        )
+        if resp.status_code == 404:
+            return None
+        if resp.status_code == 200:
+            return FileHead(
+                gitlab_content_sha256=resp.headers["x-gitlab-content-sha256"],
+                gitlab_size=int(resp.headers["x-gitlab-size"]),
+            )
+        raise_for_gitlab_response(resp)
 
     async def get_tree(self, params: TreeParams) -> Tree:
         tree_url = os.path.join(self.api_url, "projects", str(self.repo_id), "repository/tree")

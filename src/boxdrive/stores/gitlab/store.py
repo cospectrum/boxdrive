@@ -93,6 +93,7 @@ class GitlabStore(ObjectStore):
 
     async def create_bucket(self, bucket_name: BucketName) -> None:
         """Create a new bucket in the store by adding a placeholder file to the bucket directory."""
+        bucket_name = validate_bucket_name(bucket_name)
         file_path = _object_path(bucket_name, self.placeholder_name)
         body = CreateFile(
             branch=self.branch,
@@ -201,6 +202,9 @@ class GitlabStore(ObjectStore):
     async def put_object(
         self, bucket_name: BucketName, key: Key, data: bytes, content_type: ContentType | None = None
     ) -> ObjectInfo:
+        bucket_name = validate_bucket_name(bucket_name)
+        key = validate_key(key)
+
         if key == self.placeholder_name:
             raise ValueError("key not allowed")
         file_path = _object_path(bucket_name, key)
@@ -269,6 +273,8 @@ class GitlabStore(ObjectStore):
         if key == self.placeholder_name:
             raise exceptions.NoSuchKey
         head = await self.gitlab_client.head_file(_object_path(bucket_name, key), ref=self.branch)
+        if head is None:
+            raise exceptions.NoSuchKey
         return ObjectInfo(
             key=key,
             size=head.gitlab_size,
