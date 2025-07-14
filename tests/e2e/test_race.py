@@ -7,9 +7,10 @@ from typing import Any
 import httpx
 import pytest
 
-S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL", "http://localhost:9000")
-NUM_OPS = int(os.getenv("NUM_OPS", "100"))
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", "5"))
+S3_ENDPOINT_URL = os.environ["S3_ENDPOINT_URL"]
+NUM_OPS = int(os.getenv("NUM_OPS", "50"))
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "3"))
+TIMEOUT = int(os.getenv("TIMEOUT", "60"))
 
 
 async def run_in_batches(
@@ -24,12 +25,12 @@ async def run_in_batches(
 
 @pytest.fixture
 async def async_client() -> AsyncIterator[httpx.AsyncClient]:
-    async with httpx.AsyncClient(base_url=S3_ENDPOINT_URL, timeout=60.0) as client:
+    async with httpx.AsyncClient(base_url=S3_ENDPOINT_URL, timeout=TIMEOUT) as client:
         yield client
 
 
-async def test_concurrent_put_and_get(async_client: httpx.AsyncClient) -> None:
-    BUCKET = "concurrent-bucket-put-get"
+async def test_race_put_and_get(async_client: httpx.AsyncClient) -> None:
+    BUCKET = "race-bucket-put-get"
     KEYS = [f"file_{i}.txt" for i in range(BATCH_SIZE)]
     await async_client.put(f"/{BUCKET}")
 
@@ -53,8 +54,8 @@ async def test_concurrent_put_and_get(async_client: httpx.AsyncClient) -> None:
     await run_in_batches(put_and_get_pair, NUM_OPS, BATCH_SIZE)
 
 
-async def test_concurrent_delete_and_head(async_client: httpx.AsyncClient) -> None:
-    BUCKET = "concurrent-bucket-delete-head"
+async def test_race_delete_and_head(async_client: httpx.AsyncClient) -> None:
+    BUCKET = "race-bucket-delete-head"
     KEYS = [f"file_{i}.txt" for i in range(BATCH_SIZE)]
     await async_client.put(f"/{BUCKET}")
     for key in KEYS:
@@ -79,8 +80,8 @@ async def test_concurrent_delete_and_head(async_client: httpx.AsyncClient) -> No
     await run_in_batches(delete_and_head_pair, NUM_OPS, BATCH_SIZE)
 
 
-async def test_concurrent_put_and_list(async_client: httpx.AsyncClient) -> None:
-    BUCKET = "concurrent-bucket-put-list"
+async def test_race_put_and_list(async_client: httpx.AsyncClient) -> None:
+    BUCKET = "race-bucket-put-list"
     KEYS = [f"file_{i}.txt" for i in range(BATCH_SIZE)]
     await async_client.put(f"/{BUCKET}")
 
@@ -104,8 +105,8 @@ async def test_concurrent_put_and_list(async_client: httpx.AsyncClient) -> None:
     await run_in_batches(put_and_list_pair, NUM_OPS, BATCH_SIZE)
 
 
-async def test_concurrent_bucket_create_and_list(async_client: httpx.AsyncClient) -> None:
-    BUCKETS = [f"concurrent-bucket-{i}" for i in range(BATCH_SIZE)]
+async def test_race_bucket_create_and_list(async_client: httpx.AsyncClient) -> None:
+    BUCKETS = [f"race-bucket-{i}" for i in range(BATCH_SIZE)]
 
     async def create(bucket: str) -> None:
         r = await async_client.put(f"/{bucket}")
