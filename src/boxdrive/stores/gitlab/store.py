@@ -6,8 +6,10 @@ import itertools
 import logging
 from collections.abc import Callable, Iterable
 
+import aiorwlock
+import pydantic
+
 from boxdrive import constants, exceptions
-from boxdrive._keysmith import Keysmith
 from boxdrive.schemas import (
     BaseListObjectsInfo,
     BucketInfo,
@@ -34,6 +36,7 @@ type FilterObjects[L] = Callable[[list[ObjectInfo]], L]
 MAX_PAGE = 10_000
 MIN_PER_PAGE = 20
 BATCH_SIZE = 20
+DEFAULT_TIMEOUT = 60
 
 
 def get_etag(data: bytes) -> ETag:
@@ -64,18 +67,28 @@ class GitlabStore(ObjectStore):
         access_token: str,
         api_url: str = "https://gitlab.com/api/v4/",
         placeholder_name: Key = ".gitkeep",
+        timeout: float | None = None,
     ):
-        """Initialize the GitLab store with repository, token, branch, and placeholder file name."""
+        timeout = DEFAULT_TIMEOUT if timeout is None else timeout
         self.placeholder_name = validate_key(placeholder_name)
         self.branch = branch
-        self.gitlab_client = GitlabClient(repo_id, access_token, api_url)
-        self.keysmith = Keysmith()
+        self.gitlab_client = GitlabClient(repo_id, access_token, api_url, timeout=timeout)
+        self.lock = aiorwlock.RWLock()
 
     async def list_buckets(self) -> list[BucketInfo]:
         """List all buckets in the store."""
         now = datetime.datetime.now(datetime.UTC)
-        tree = await self.gitlab_client.get_tree(TreeParams(ref=self.branch))
-        buckets = [BucketInfo(name=item.name, creation_date=now) for item in tree.items if item.type == "tree"]
+        async with self.lock.reader:
+            tree = await self.gitlab_client.get_tree(TreeParams(ref=self.branch))
+        buckets = []
+        items = [item for item in tree.items if item.type == "tree"]
+        for item in items:
+            try:
+                bucket = BucketInfo(name=item.name, creation_date=now)
+            except pydantic.ValidationError:
+                logger.exception("invalid bucket info")
+                continue
+            buckets.append(bucket)
         return buckets
 
     async def create_bucket(self, bucket_name: BucketName) -> None:
@@ -85,7 +98,7 @@ class GitlabStore(ObjectStore):
             branch=self.branch,
             commit_message=f"create bucket {bucket_name}",
         )
-        async with self.keysmith.lock(bucket_name):
+        async with self.lock.writer:
             resp = await self.gitlab_client.create_file(file_path, body)
         if resp.status_code == 201:
             logger.info("created bucket")
@@ -103,10 +116,10 @@ class GitlabStore(ObjectStore):
             _ = keys
             return False
 
-        async with self.keysmith.lock(bucket_name):
+        async with self.lock.writer:
             keys = await self._fetch_object_keys(bucket_name, is_enough, per_page=per_page)
             for key in keys:
-                await self._delete_object(bucket_name, key)
+                await self._delete_object(bucket_name, key, keep_placeholder=False)
 
     async def list_objects(
         self,
@@ -129,7 +142,7 @@ class GitlabStore(ObjectStore):
                 marker=marker,
             )
 
-        async with self.keysmith.lock(bucket_name):
+        async with self.lock.reader:
             per_page = max(MIN_PER_PAGE, max_keys)
             return await self._collect_objects(bucket_name, filter_objects, per_page=per_page)
 
@@ -158,7 +171,7 @@ class GitlabStore(ObjectStore):
                 start_after=start_after,
             )
 
-        async with self.keysmith.lock(bucket_name):
+        async with self.lock.reader:
             per_page = max(MIN_PER_PAGE, max_keys)
             return await self._collect_objects(bucket_name, filter_objects, per_page=per_page)
 
@@ -167,7 +180,8 @@ class GitlabStore(ObjectStore):
         if key == self.placeholder_name:
             raise exceptions.NoSuchKey
         file_path = _object_path(bucket_name, key)
-        resp = await self.gitlab_client.get_raw_file(file_path, ref=self.branch)
+        async with self.lock.reader:
+            resp = await self.gitlab_client.get_raw_file(file_path, ref=self.branch)
         if resp.status_code == 200:
             data = resp.content
             return Object(
@@ -188,7 +202,7 @@ class GitlabStore(ObjectStore):
         self, bucket_name: BucketName, key: Key, data: bytes, content_type: ContentType | None = None
     ) -> ObjectInfo:
         if key == self.placeholder_name:
-            raise ValueError
+            raise ValueError("key not allowed")
         file_path = _object_path(bucket_name, key)
         content = base64.b64encode(data).decode("utf-8")
         body = CreateFile(
@@ -197,7 +211,7 @@ class GitlabStore(ObjectStore):
             content=content,
             encoding="base64",
         )
-        async with self.keysmith.lock(bucket_name):
+        async with self.lock.writer:
             obj = ObjectInfo(
                 key=key,
                 size=len(data),
@@ -224,15 +238,16 @@ class GitlabStore(ObjectStore):
             return
         raise_for_gitlab_response(resp)
 
-    async def delete_object(self, bucket_name: BucketName, key: Key) -> None:
+    async def delete_object(self, bucket_name: BucketName, key: Key, *, keep_placeholder: bool = True) -> None:
         """Delete an object from a bucket."""
-        if key == self.placeholder_name:
-            return
-        async with self.keysmith.lock(bucket_name):
-            await self._delete_object(bucket_name, key)
+        async with self.lock.writer:
+            await self._delete_object(bucket_name, key, keep_placeholder=keep_placeholder)
 
-    async def _delete_object(self, bucket_name: BucketName, key: Key) -> None:
+    async def _delete_object(self, bucket_name: BucketName, key: Key, *, keep_placeholder: bool = True) -> None:
         """Delete an object from a bucket."""
+        if key == self.placeholder_name and keep_placeholder:
+            logger.info("skipped placeholder delete")
+            return
         file_path = _object_path(bucket_name, key)
         params = DeleteFile(
             branch=self.branch,
@@ -247,6 +262,10 @@ class GitlabStore(ObjectStore):
         raise_for_gitlab_response(resp)
 
     async def head_object(self, bucket_name: BucketName, key: Key) -> ObjectInfo:
+        async with self.lock.reader:
+            return await self._head_object(bucket_name, key)
+
+    async def _head_object(self, bucket_name: BucketName, key: Key) -> ObjectInfo:
         if key == self.placeholder_name:
             raise exceptions.NoSuchKey
         head = await self.gitlab_client.head_file(_object_path(bucket_name, key), ref=self.branch)
@@ -278,7 +297,7 @@ class GitlabStore(ObjectStore):
 
         objects: list[ObjectInfo] = []
         for batch in itertools.batched(keys, n=BATCH_SIZE):
-            coros = [self.head_object(bucket_name, key) for key in batch]
+            coros = [self._head_object(bucket_name, key) for key in batch]
             heads = await asyncio.gather(*coros)
             objects.extend(heads)
 
@@ -304,7 +323,11 @@ class GitlabStore(ObjectStore):
             tree = await self.gitlab_client.get_tree(params)
             items = [item for item in tree.items if item.type == "blob"]
             for item in items:
-                _bucket, key = _split_path(item.path)
+                try:
+                    _bucket, key = _split_path(item.path)
+                except ValueError:
+                    logger.exception("failed to parse object path")
+                    continue
                 assert _bucket == bucket_name
                 keys.append(key)
 

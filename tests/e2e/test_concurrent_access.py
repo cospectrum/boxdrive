@@ -24,7 +24,7 @@ async def run_in_batches(
 
 @pytest.fixture
 async def async_client() -> AsyncIterator[httpx.AsyncClient]:
-    async with httpx.AsyncClient(base_url=S3_ENDPOINT_URL, timeout=10.0) as client:
+    async with httpx.AsyncClient(base_url=S3_ENDPOINT_URL, timeout=60.0) as client:
         yield client
 
 

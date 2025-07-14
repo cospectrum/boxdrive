@@ -63,8 +63,10 @@ class GitlabClient:
         repo_id: int,
         access_token: str,
         api_url: str = "https://gitlab.com/api/v4/",
+        timeout: float | None = None,
     ):
         self.client = httpx.AsyncClient(
+            timeout=timeout,
             headers={
                 "Authorization": f"Bearer {access_token}",
             },
