@@ -66,9 +66,10 @@ class S3:
         delimiter: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
         marker: Key | None = None,
+        encoding_type: str | None = None,
     ) -> xml.ListBucketResult:
         objects_info = await self.store.list_objects(
-            bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker
+            bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker, encoding_type=encoding_type
         )
         return self._build_list_bucket_result(
             bucket,

@@ -131,6 +131,7 @@ class GitlabStore(ObjectStore):
         delimiter: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
         marker: Key | None = None,
+        encoding_type: str | None = None,
     ) -> ListObjectsInfo:
         """List objects in a bucket."""
 
@@ -142,6 +143,7 @@ class GitlabStore(ObjectStore):
                 delimiter=delimiter,
                 max_keys=max_keys,
                 marker=marker,
+                encoding_type=encoding_type,
             )
 
         async with self.lock.reader:

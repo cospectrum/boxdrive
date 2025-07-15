@@ -3,6 +3,18 @@ import urllib.parse
 from boxdrive.schemas import Key, ListObjectsInfo, ListObjectsV2Info, MaxKeys, ObjectInfo
 
 
+def _encode_keys_and_prefixes(
+    objects: list[ObjectInfo],
+    common_prefixes: list[str],
+    *,
+    encoding_type: str | None = None,
+) -> tuple[list[ObjectInfo], list[str]]:
+    if encoding_type == "url":
+        objects = [obj.model_copy(update={"key": urllib.parse.quote(obj.key)}) for obj in objects]
+        common_prefixes = [urllib.parse.quote(prefix) for prefix in common_prefixes]
+    return objects, common_prefixes
+
+
 def filter_objects(
     objects: list[ObjectInfo],
     *,
@@ -10,6 +22,7 @@ def filter_objects(
     delimiter: str | None = None,
     max_keys: MaxKeys = 1000,
     marker: Key | None = None,
+    encoding_type: str | None = None,
 ) -> ListObjectsInfo:
     if prefix:
         objects = [obj for obj in objects if obj.key.startswith(prefix)]
@@ -22,6 +35,7 @@ def filter_objects(
     objects = objects[:max_keys]
 
     objects, common_prefixes = _split_contents_and_prefixes(objects, prefix=prefix, delimiter=delimiter)
+    objects, common_prefixes = _encode_keys_and_prefixes(objects, common_prefixes, encoding_type=encoding_type)
     return ListObjectsInfo(
         is_truncated=is_truncated,
         common_prefixes=common_prefixes,
@@ -51,10 +65,7 @@ def filter_objects_v2(
     objects = objects[:max_keys]
 
     objects, common_prefixes = _split_contents_and_prefixes(objects, prefix=prefix, delimiter=delimiter)
-    if encoding_type == "url":
-        for obj in objects:
-            obj.key = urllib.parse.quote(obj.key)
-        common_prefixes = [urllib.parse.quote(prefix) for prefix in common_prefixes]
+    objects, common_prefixes = _encode_keys_and_prefixes(objects, common_prefixes, encoding_type=encoding_type)
     return ListObjectsV2Info(objects=objects, is_truncated=is_truncated, common_prefixes=common_prefixes)
 
 

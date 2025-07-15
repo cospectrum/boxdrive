@@ -43,6 +43,7 @@ class ObjectStore(ABC):
         delimiter: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
         marker: Key | None = None,
+        encoding_type: str | None = None,
     ) -> ListObjectsInfo:
         """List objects in a bucket."""
         pass

@@ -45,7 +45,14 @@ async def list_objects(
     s3: S3Dep,
 ) -> XMLResponse:
     if list_type == "1":
-        objects = await s3.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker)
+        objects = await s3.list_objects(
+            bucket,
+            prefix=prefix,
+            delimiter=delimiter,
+            max_keys=max_keys,
+            marker=marker,
+            encoding_type=encoding_type,
+        )
     else:
         objects = await s3.list_objects_v2(
             bucket,

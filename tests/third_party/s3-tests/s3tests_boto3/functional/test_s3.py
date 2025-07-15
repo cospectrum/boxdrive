@@ -256,6 +256,8 @@ def test_bucket_listv2_encoding_basic():
     assert len(prefixes) == 3
     assert prefixes == ['foo%2B1/', 'foo/', 'quux%20ab/']
 
+@pytest.mark.gitlab
+@pytest.mark.inmemory
 def test_bucket_list_encoding_basic():
     bucket_name = _create_objects(keys=['foo+1/bar', 'foo/bar/xyzzy', 'quux ab/thud', 'asdf+b'])
     client = get_client()

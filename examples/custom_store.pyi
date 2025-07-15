@@ -29,6 +29,7 @@ class MyCustomStore(ObjectStore):
         delimiter: str | None = None,
         max_keys: MaxKeys = 1000,
         marker: Key | None = None,
+        encoding_type: str | None = None,
     ) -> ListObjectsInfo: ...
     async def list_objects_v2(
         self,
