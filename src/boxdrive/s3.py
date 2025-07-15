@@ -19,7 +19,6 @@ class S3:
 
     async def list_buckets(self) -> xml.ListAllMyBucketsResult:
         buckets = await self.store.list_buckets()
-        logger.debug("got %s buckets", len(buckets))
         buckets_xml = [
             xml.Bucket(name=bucket.name, creation_date=bucket.creation_date.isoformat()) for bucket in buckets
         ]

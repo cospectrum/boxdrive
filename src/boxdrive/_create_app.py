@@ -18,6 +18,7 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
     OTLPSpanExporter as HttpSpanExporter,
 )
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor, LogExporter
@@ -104,6 +105,7 @@ def setup_opentelemetry(
     logging.getLogger().addHandler(logging_handler)
 
     FastAPIInstrumentor.instrument_app(app)
+    HTTPXClientInstrumentor().instrument()
 
 
 def _create_http_log_exporter(endpoint: HttpUrl) -> LogExporter:

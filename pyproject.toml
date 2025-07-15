@@ -14,6 +14,7 @@ dependencies = [
     "opentelemetry-sdk>=1.34.1",
     "aiorwlock>=1.5.0",
     "opentelemetry-exporter-otlp>=1.35.0",
+    "opentelemetry-instrumentation-httpx>=0.56b0",
 ]
 
 [dependency-groups]
