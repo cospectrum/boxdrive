@@ -106,6 +106,7 @@ class MyCustomStore(ObjectStore):
 ```sh
 docker compose -f docker-compose-monitoring.yaml up --detach --wait
 ```
+> Telemetry data will be saved in ClickHouse, which is exposed at localhost:8123.
 
 1. Start the API:
 ```sh
