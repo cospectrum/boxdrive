@@ -67,6 +67,7 @@ def create_app(
         otel_exporter_grpc_endpoint=otel_exporter_grpc_endpoint,
         log_level=log_level,
     )
+    logging.getLogger("watchfiles.main").propagate = False
     return app
 
 
