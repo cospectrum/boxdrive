@@ -100,7 +100,7 @@ class MyCustomStore(ObjectStore):
 
 ## Development
 
-### Start API
+### API
 
 0. start monitoring pipeline:
 ```sh
@@ -112,7 +112,7 @@ docker compose -f docker-compose-monitoring.yaml up --detach --wait
 uv run fastapi dev examples/inmemory.py
 ```
 
-### Run Tests
+### Tests
 
 #### unit
 ```bash
@@ -136,7 +136,7 @@ uv run tox -- s3tests_boto3/functional/test_s3.py -m boxdrive
 See [tests/third_party/s3-tests/boxdrive.md](./tests/third_party/s3-tests/boxdrive.md)
 for additional info.
 
-### Check Code Quality
+### Code Quality
 
 ```bash
 uv run ruff format .
