@@ -1,6 +1,6 @@
 [project]
 name = "boxdrive"
-version = "0.0.3"
+version = "0.0.4"
 description = "S3-compatible API with Abstract Object Store in Python (FastAPI)."
 readme = "README.md"
 authors = [{ name = "Alex Severin", email = "severinalexeyv@gmail.com" }]
