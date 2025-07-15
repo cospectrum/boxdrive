@@ -8,11 +8,9 @@ branch = os.environ.get("BRANCH", "main")
 access_token = os.environ["ACCESS_TOKEN"]
 
 otel_exporter_http_endpoint = os.getenv("OTEL_EXPORTER_HTTP_ENDPOINT")
-otel_exporter_grpc_endpoint = os.getenv("OTEL_EXPORTER_GRPC_ENDPOINT")
 
 store = GitlabStore(repo_id, branch, access_token=access_token)
 app = create_app(
     store,
     otel_exporter_http_endpoint=otel_exporter_http_endpoint,
-    otel_exporter_grpc_endpoint=otel_exporter_grpc_endpoint,
 )

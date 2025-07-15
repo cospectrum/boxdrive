@@ -102,7 +102,7 @@ class MyCustomStore(ObjectStore):
 
 ### Start API
 
-0. start monitoring pipeline (optional):
+0. start monitoring pipeline:
 ```sh
 docker compose -f docker-compose-monitoring.yaml up --detach --wait
 ```
