@@ -39,6 +39,7 @@ class S3:
         max_keys: MaxKeys = constants.MAX_KEYS,
         continuation_token: Key | None = None,
         start_after: Key | None = None,
+        encoding_type: str | None = None,
     ) -> xml.ListBucketResult:
         objects_info = await self.store.list_objects_v2(
             bucket,
@@ -47,6 +48,7 @@ class S3:
             max_keys=max_keys,
             continuation_token=continuation_token,
             start_after=start_after,
+            encoding_type=encoding_type,
         )
         return self._build_list_bucket_result(
             bucket,

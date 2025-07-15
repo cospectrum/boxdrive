@@ -40,6 +40,7 @@ async def list_objects(
     continuation_token: Key | None = Query(None, alias="continuation-token"),
     start_after: Key | None = Query(None, alias="start-after"),
     list_type: Literal["1", "2"] = Query("1", alias="list-type"),
+    encoding_type: Literal["url"] | None = Query(None, alias="encoding-type"),
     *,
     s3: S3Dep,
 ) -> XMLResponse:
@@ -53,6 +54,7 @@ async def list_objects(
             max_keys=max_keys,
             continuation_token=continuation_token,
             start_after=start_after,
+            encoding_type=encoding_type,
         )
     return XMLResponse(objects)
 

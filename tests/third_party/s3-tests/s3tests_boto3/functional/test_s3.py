@@ -207,6 +207,7 @@ def test_basic_key_count():
     response1 = client.list_objects_v2(Bucket=bucket_name)
     assert response1['KeyCount'] == 5
 
+@pytest.mark.no_gitlab
 @pytest.mark.inmemory
 def test_bucket_list_delimiter_basic():
     bucket_name = _create_objects(keys=['foo/bar', 'foo/bar/xyzzy', 'quux/thud', 'asdf'])
@@ -221,6 +222,7 @@ def test_bucket_list_delimiter_basic():
     assert len(prefixes) == 2
     assert prefixes == ['foo/', 'quux/']
 
+@pytest.mark.no_gitlab
 @pytest.mark.inmemory
 @pytest.mark.list_objects_v2
 def test_bucket_listv2_delimiter_basic():
@@ -238,6 +240,8 @@ def test_bucket_listv2_delimiter_basic():
     assert response['KeyCount'] == len(prefixes) + len(keys)
 
 
+@pytest.mark.gitlab
+@pytest.mark.inmemory
 @pytest.mark.list_objects_v2
 def test_bucket_listv2_encoding_basic():
     bucket_name = _create_objects(keys=['foo+1/bar', 'foo/bar/xyzzy', 'quux ab/thud', 'asdf+b'])

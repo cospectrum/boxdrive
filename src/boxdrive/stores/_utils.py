@@ -1,3 +1,5 @@
+import urllib.parse
+
 from boxdrive.schemas import Key, ListObjectsInfo, ListObjectsV2Info, MaxKeys, ObjectInfo
 
 
@@ -49,6 +51,10 @@ def filter_objects_v2(
     objects = objects[:max_keys]
 
     objects, common_prefixes = _split_contents_and_prefixes(objects, prefix=prefix, delimiter=delimiter)
+    if encoding_type == "url":
+        for obj in objects:
+            obj.key = urllib.parse.quote(obj.key)
+        common_prefixes = [urllib.parse.quote(prefix) for prefix in common_prefixes]
     return ListObjectsV2Info(objects=objects, is_truncated=is_truncated, common_prefixes=common_prefixes)
 
 
