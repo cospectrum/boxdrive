@@ -3,7 +3,7 @@
 import logging
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from . import (
@@ -98,9 +98,8 @@ async def put_object(
 
 
 @router.delete("/{bucket}/{key:path}")
-async def delete_object(bucket: BucketName, key: Key, s3: S3Dep) -> XMLResponse:
-    await s3.delete_object(bucket, key)
-    return XMLResponse(status_code=status.HTTP_204_NO_CONTENT)
+async def delete_object(bucket: BucketName, key: Key, s3: S3Dep) -> Response:
+    return await s3.delete_object(bucket, key)
 
 
 @router.put("/{bucket}")

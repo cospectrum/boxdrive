@@ -80,6 +80,7 @@ class GitlabStore(ObjectStore):
         now = datetime.datetime.now(datetime.UTC)
         async with self.lock.reader:
             tree = await self.gitlab_client.get_tree(TreeParams(ref=self.branch))
+        assert tree
         buckets = []
         items = [item for item in tree.items if item.type == "tree"]
         for item in items:
@@ -327,6 +328,8 @@ class GitlabStore(ObjectStore):
                 per_page=per_page,
             )
             tree = await self.gitlab_client.get_tree(params)
+            if tree is None:
+                raise exceptions.NoSuchBucket
             items = [item for item in tree.items if item.type == "blob"]
             for item in items:
                 try:

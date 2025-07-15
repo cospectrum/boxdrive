@@ -116,7 +116,7 @@ class GitlabClient:
             )
         raise_for_gitlab_response(resp)
 
-    async def get_tree(self, params: TreeParams) -> Tree:
+    async def get_tree(self, params: TreeParams) -> Tree | None:
         tree_url = os.path.join(self.api_url, "projects", str(self.repo_id), "repository/tree")
         resp = await self.client.get(tree_url, params=params.model_dump(exclude_none=True))
         if resp.status_code == 200:
@@ -126,6 +126,8 @@ class GitlabClient:
                 total_pages=int(resp.headers["x-total-pages"]),
             )
             return Tree(items=items, headers=headers)
+        if resp.status_code == 404:
+            return None
         raise_for_gitlab_response(resp)
 
 
