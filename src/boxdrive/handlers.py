@@ -73,7 +73,18 @@ async def head_object(bucket: BucketName, key: Key, s3: S3Dep) -> Response:
     return await s3.head_object(bucket, key)
 
 
-@router.put("/{bucket}/{key:path}")
+@router.put(
+    "/{bucket}/{key:path}",
+    openapi_extra={
+        "requestBody": {
+            "content": {
+                "application/octet-stream": {
+                    "schema": {"type": "string", "format": "binary"},
+                }
+            }
+        }
+    },
+)
 async def put_object(
     bucket: BucketName,
     key: Key,

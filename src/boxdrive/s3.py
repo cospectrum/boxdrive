@@ -1,4 +1,5 @@
 import logging
+import os
 from collections.abc import AsyncIterator
 
 from fastapi import HTTPException, Response
@@ -134,8 +135,10 @@ class S3:
         async def generate() -> AsyncIterator[bytes]:
             yield data
 
+        filename = os.path.basename(key)
         headers: dict[str, str] = {
             "Content-Length": str(len(data)),
+            "Content-Disposition": f'attachment; filename="{filename}"',
             "ETag": f'"{metadata.etag}"',
             "Last-Modified": metadata.last_modified.strftime("%a, %d %b %Y %H:%M:%S GMT"),
             "Content-Type": metadata.content_type,
