@@ -7,9 +7,9 @@ Point to your test configuration:
 export S3TEST_CONF=s3tests.conf
 ```
 
-Run all tests marked for boxdrive:
+Run all tests marked for inmemory:
 ```sh
-uv run tox -- s3tests_boto3/functional/test_s3.py -m boxdrive
+uv run tox -- s3tests_boto3/functional/test_s3.py -m inmemory
 ```
 
 Run specific test:

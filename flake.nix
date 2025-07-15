@@ -34,6 +34,8 @@
             packages = with pkgs; [
               git
               uv
+
+              clickhouse
             ];
           };
         };

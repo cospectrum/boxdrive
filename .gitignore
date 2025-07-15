@@ -213,3 +213,4 @@ __marimo__/
 pyrightconfig.json
 tmp
 .tmp
+.volumes

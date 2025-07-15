@@ -1,10 +1,11 @@
 import logging
+import os
 from collections.abc import AsyncIterator
 
 from fastapi import HTTPException, Response
 from fastapi.responses import StreamingResponse
 
-from boxdrive.schemas.store import ListObjectsInfo
+from boxdrive.schemas import BaseListObjectsInfo
 
 from . import constants, exceptions
 from .schemas import BucketName, ContentType, Key, MaxKeys, xml
@@ -31,7 +32,7 @@ class S3:
         bucket: BucketName,
         prefix: Key | None = None,
         delimiter: str | None = None,
-        max_keys: MaxKeys = 1000,
+        max_keys: MaxKeys = constants.MAX_KEYS,
         continuation_token: Key | None = None,
         start_after: Key | None = None,
     ) -> xml.ListBucketResult:
@@ -56,7 +57,7 @@ class S3:
         bucket: BucketName,
         prefix: Key | None = None,
         delimiter: str | None = None,
-        max_keys: MaxKeys = 1000,
+        max_keys: MaxKeys = constants.MAX_KEYS,
         marker: Key | None = None,
     ) -> xml.ListBucketResult:
         objects_info = await self.store.list_objects(
@@ -73,10 +74,10 @@ class S3:
     def _build_list_bucket_result(
         self,
         bucket: BucketName,
-        objects_info: ListObjectsInfo,
+        objects_info: BaseListObjectsInfo,
         prefix: Key | None = None,
         delimiter: str | None = None,
-        max_keys: MaxKeys = 1000,
+        max_keys: MaxKeys = constants.MAX_KEYS,
     ) -> xml.ListBucketResult:
         objects: list[xml.Content] = []
         for obj in objects_info.objects:
@@ -134,8 +135,10 @@ class S3:
         async def generate() -> AsyncIterator[bytes]:
             yield data
 
+        filename = os.path.basename(key)
         headers: dict[str, str] = {
             "Content-Length": str(len(data)),
+            "Content-Disposition": f'attachment; filename="{filename}"',
             "ETag": f'"{metadata.etag}"',
             "Last-Modified": metadata.last_modified.strftime("%a, %d %b %Y %H:%M:%S GMT"),
             "Content-Type": metadata.content_type,

@@ -8,15 +8,16 @@
 S3-compatible API with **Abstract Object Store** in Python (FastAPI).
 Work in progress.
 
-## Installation
-
-```bash
-uv add boxdrive
-```
+## Built-in stores
+- `InMemoryStore`
+- `GitlabStore` (with some limitations)
 
 ## Quick Start
 
-### Basic Usage
+0. install `boxdrive` from [pypi](https://pypi.org/project/boxdrive/) using your favorite package manager:
+```bash
+uv add boxdrive
+```
 
 1. create `main.py`:
 ```python
@@ -71,7 +72,7 @@ class MyCustomStore(ObjectStore):
     async def put_object(
         self, bucket_name: BucketName, key: Key, data: bytes, content_type: ContentType | None = None
     ) -> ObjectInfo: ...
-    async def delete_object(self, bucket_name: BucketName, key: Key) -> ObjectInfo: ...
+    async def delete_object(self, bucket_name: BucketName, key: Key) -> None: ...
     async def head_object(self, bucket_name: BucketName, key: Key) -> ObjectInfo: ...
     async def list_objects(
         self,
@@ -99,7 +100,19 @@ class MyCustomStore(ObjectStore):
 
 ## Development
 
-### Tests
+### Start API
+
+0. start monitoring pipeline:
+```sh
+docker compose -f docker-compose-monitoring.yaml up --detach --wait
+```
+
+1. start api:
+```sh
+uv run fastapi dev examples/inmemory.py
+```
+
+### Run Tests
 
 #### unit
 ```bash
@@ -107,14 +120,14 @@ uv run pytest tests/unit
 ```
 
 #### e2e
-API should run in the background.
+`API` should run in the background.
 ```bash
 export S3_ENDPOINT_URL=http://127.0.0.1:8000
 uv run run pytest tests/e2e
 ```
 
 #### third_party/s3-tests
-API should run in the background.
+`API` should run in the background.
 ```bash
 cd tests/third_party/s3-tests
 export S3TEST_CONF=s3tests.conf
@@ -123,7 +136,7 @@ uv run tox -- s3tests_boto3/functional/test_s3.py -m boxdrive
 See [tests/third_party/s3-tests/boxdrive.md](./tests/third_party/s3-tests/boxdrive.md)
 for additional info.
 
-### Code Quality
+### Check Code Quality
 
 ```bash
 uv run ruff format .

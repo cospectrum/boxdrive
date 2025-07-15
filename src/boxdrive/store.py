@@ -2,12 +2,14 @@
 
 from abc import ABC, abstractmethod
 
+from . import constants
 from .schemas import (
     BucketInfo,
     BucketName,
     ContentType,
     Key,
     ListObjectsInfo,
+    ListObjectsV2Info,
     MaxKeys,
     Object,
     ObjectInfo,
@@ -39,7 +41,7 @@ class ObjectStore(ABC):
         *,
         prefix: Key | None = None,
         delimiter: str | None = None,
-        max_keys: MaxKeys = 1000,
+        max_keys: MaxKeys = constants.MAX_KEYS,
         marker: Key | None = None,
     ) -> ListObjectsInfo:
         """List objects in a bucket."""
@@ -53,10 +55,10 @@ class ObjectStore(ABC):
         continuation_token: Key | None = None,
         delimiter: str | None = None,
         encoding_type: str | None = None,
-        max_keys: MaxKeys = 1000,
+        max_keys: MaxKeys = constants.MAX_KEYS,
         prefix: Key | None = None,
         start_after: Key | None = None,
-    ) -> ListObjectsInfo:
+    ) -> ListObjectsV2Info:
         """List objects in a bucket."""
         pass
 
@@ -73,8 +75,8 @@ class ObjectStore(ABC):
         pass
 
     @abstractmethod
-    async def delete_object(self, bucket_name: BucketName, key: Key) -> ObjectInfo:
-        """Delete an object from a bucket and return its info."""
+    async def delete_object(self, bucket_name: BucketName, key: Key) -> None:
+        """Delete an object from a bucket."""
         pass
 
     @abstractmethod
