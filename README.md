@@ -48,7 +48,7 @@ The API provides S3-compatible endpoints:
 
 ## Creating Custom Object Stores
 
-To create a custom object store implementation, inherit from `ObjectStore`:
+To use a custom object store, implement the `ObjectStore` interface and pass an instance to `create_app`:
 
 ```python
 from boxdrive import (
