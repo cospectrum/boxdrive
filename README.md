@@ -14,12 +14,12 @@ Work in progress.
 
 ## Quick Start
 
-0. install `boxdrive` from [pypi](https://pypi.org/project/boxdrive/) using your favorite package manager:
+0. Install `boxdrive` from [PyPI](https://pypi.org/project/boxdrive/) using your preferred package manager:
 ```bash
 uv add boxdrive
 ```
 
-1. create `main.py`:
+1. Create `main.py`:
 ```python
 from boxdrive import create_app
 from boxdrive.stores import InMemoryStore
@@ -28,15 +28,15 @@ store = InMemoryStore()
 app = create_app(store)
 ```
 
-2. start API (in dev mode):
+2. Start the API (in development mode):
 ```bash
 fastapi dev main.py
 ```
-> Swagger will start on http://localhost:8000/docs by default
+> By default, Swagger UI will be available at http://localhost:8000/docs
 
 ## API Endpoints
 
-The API provides S3-compatible endpoints:
+The API exposes the following S3-compatible endpoints:
 
 - `GET /` - List buckets
 - `PUT /{bucket}` - Create a bucket
@@ -48,7 +48,7 @@ The API provides S3-compatible endpoints:
 
 ## Creating Custom Object Stores
 
-To use a custom object store, implement the `ObjectStore` interface and pass an instance to `create_app`:
+To use a custom object store, implement the `ObjectStore` interface and provide an instance to `create_app`:
 
 ```python
 from boxdrive import (
@@ -102,39 +102,40 @@ class MyCustomStore(ObjectStore):
 
 ### API
 
-0. start monitoring pipeline:
+0. Start the monitoring pipeline:
 ```sh
 docker compose -f docker-compose-monitoring.yaml up --detach --wait
 ```
 
-1. start api:
+1. Start the API:
 ```sh
+export OTEL_EXPORTER_HTTP_ENDPOINT=http://localhost:4318
 uv run fastapi dev examples/inmemory.py
 ```
 
 ### Tests
 
-#### unit
+#### Unit tests
 ```bash
 uv run pytest tests/unit
 ```
 
-#### e2e
-`API` should run in the background.
+#### End-to-end (e2e) tests  
+The API should be running in the background.
 ```bash
 export S3_ENDPOINT_URL=http://127.0.0.1:8000
 uv run run pytest tests/e2e
 ```
 
-#### third_party/s3-tests
-`API` should run in the background.
+#### Third-party S3 tests  
+The API should be running in the background.
 ```bash
 cd tests/third_party/s3-tests
 export S3TEST_CONF=s3tests.conf
 uv run tox -- s3tests_boto3/functional/test_s3.py -m boxdrive
 ```
 See [tests/third_party/s3-tests/boxdrive.md](./tests/third_party/s3-tests/boxdrive.md)
-for additional info.
+for additional information.
 
 ### Code Quality
 
@@ -146,4 +147,4 @@ uv run mypy .
 
 ## License
 
-Apache 2.0 - see [LICENSE](./LICENSE) file for details.
+Apache 2.0 – see the [LICENSE](./LICENSE) file for details.
