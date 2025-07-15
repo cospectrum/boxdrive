@@ -1,0 +1,38 @@
+networks:
+  internal:
+    driver: bridge
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.6.3
+    ports:
+      - 8123:8123   # HTTP interface
+      - 9000:9000   # Native interface
+    environment:
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - .volumes/clickhouse_lib:/var/lib/clickhouse
+      - .volumes/clickhouse_log:/var/log/clickhouse-server
+    networks:
+      - internal
+    healthcheck:
+      test: wget --no-verbose --tries=1 http://127.0.0.1:8123/ping || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 3
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.129.1
+    ports:
+      - 4317:4317   # OTLP gRPC receiver
+      - 4318:4318   # OTLP HTTP receiver
+    environment:
+      CLICKHOUSE_ENDPOINT: tcp://clickhouse:9000?dial_timeout=10s
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yml
+    networks:
+      - internal
+    depends_on:
+      clickhouse:
+        condition: service_healthy

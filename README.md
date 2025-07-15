@@ -100,7 +100,19 @@ class MyCustomStore(ObjectStore):
 
 ## Development
 
-### Tests
+### Start API
+
+0. start monitoring pipeline (optional):
+```sh
+docker compose -f docker-compose-monitoring.yaml up --detach --wait
+```
+
+1. start api:
+```sh
+uv run fastapi dev examples/inmemory.py
+```
+
+### Run Tests
 
 #### unit
 ```bash
@@ -108,14 +120,14 @@ uv run pytest tests/unit
 ```
 
 #### e2e
-API should run in the background.
+`API` should run in the background.
 ```bash
 export S3_ENDPOINT_URL=http://127.0.0.1:8000
 uv run run pytest tests/e2e
 ```
 
 #### third_party/s3-tests
-API should run in the background.
+`API` should run in the background.
 ```bash
 cd tests/third_party/s3-tests
 export S3TEST_CONF=s3tests.conf
@@ -124,7 +136,7 @@ uv run tox -- s3tests_boto3/functional/test_s3.py -m boxdrive
 See [tests/third_party/s3-tests/boxdrive.md](./tests/third_party/s3-tests/boxdrive.md)
 for additional info.
 
-### Code Quality
+### Check Code Quality
 
 ```bash
 uv run ruff format .
