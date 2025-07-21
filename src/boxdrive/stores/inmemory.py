@@ -78,16 +78,19 @@ class InMemoryStore(ObjectStore):
         self,
         bucket_name: str,
         *,
-        prefix: Key | None = None,
+        prefix: str | None = None,
         delimiter: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
         marker: Key | None = None,
+        encoding_type: str | None = None,
     ) -> ListObjectsInfo:
         bucket = self.buckets.get(bucket_name)
         if bucket is None:
             raise exceptions.NoSuchBucket
         objects = [obj.info for obj in bucket.objects.values()]
-        return filter_objects(objects, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker)
+        return filter_objects(
+            objects, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker, encoding_type=encoding_type
+        )
 
     async def list_objects_v2(
         self,
@@ -97,7 +100,7 @@ class InMemoryStore(ObjectStore):
         delimiter: str | None = None,
         encoding_type: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
-        prefix: Key | None = None,
+        prefix: str | None = None,
         start_after: Key | None = None,
     ) -> ListObjectsV2Info:
         bucket = self.buckets.get(bucket_name)

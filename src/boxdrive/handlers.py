@@ -3,7 +3,7 @@
 import logging
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from . import (
@@ -33,18 +33,26 @@ async def list_buckets(s3: S3Dep) -> XMLResponse:
 @router.get("/{bucket}")
 async def list_objects(
     bucket: BucketName,
-    prefix: Key | None = Query(None),
+    prefix: str | None = Query(None),
     delimiter: str | None = Query(None),
     max_keys: MaxKeys = Query(constants.MAX_KEYS, alias="max-keys"),
-    marker: Key | None = Query(None),
+    marker: str | None = Query(None),
     continuation_token: Key | None = Query(None, alias="continuation-token"),
     start_after: Key | None = Query(None, alias="start-after"),
     list_type: Literal["1", "2"] = Query("1", alias="list-type"),
+    encoding_type: Literal["url"] | None = Query(None, alias="encoding-type"),
     *,
     s3: S3Dep,
 ) -> XMLResponse:
     if list_type == "1":
-        objects = await s3.list_objects(bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker)
+        objects = await s3.list_objects(
+            bucket,
+            prefix=prefix,
+            delimiter=delimiter,
+            max_keys=max_keys,
+            marker=marker,
+            encoding_type=encoding_type,
+        )
     else:
         objects = await s3.list_objects_v2(
             bucket,
@@ -53,6 +61,7 @@ async def list_objects(
             max_keys=max_keys,
             continuation_token=continuation_token,
             start_after=start_after,
+            encoding_type=encoding_type,
         )
     return XMLResponse(objects)
 
@@ -98,9 +107,8 @@ async def put_object(
 
 
 @router.delete("/{bucket}/{key:path}")
-async def delete_object(bucket: BucketName, key: Key, s3: S3Dep) -> XMLResponse:
-    await s3.delete_object(bucket, key)
-    return XMLResponse(status_code=status.HTTP_204_NO_CONTENT)
+async def delete_object(bucket: BucketName, key: Key, s3: S3Dep) -> Response:
+    return await s3.delete_object(bucket, key)
 
 
 @router.put("/{bucket}")

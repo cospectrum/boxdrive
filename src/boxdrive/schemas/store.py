@@ -104,7 +104,7 @@ class BaseListObjectsInfo(BaseModel):
 
 
 class ListObjectsInfo(BaseListObjectsInfo):
-    pass
+    next_marker: str = ""
 
 
 class ListObjectsV2Info(BaseListObjectsInfo):

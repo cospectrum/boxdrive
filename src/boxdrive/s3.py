@@ -2,8 +2,9 @@ import logging
 import os
 from collections.abc import AsyncIterator
 
-from fastapi import HTTPException, Response
+from fastapi import HTTPException, Response, status
 from fastapi.responses import StreamingResponse
+from opentelemetry import trace
 
 from boxdrive.schemas import BaseListObjectsInfo
 
@@ -11,6 +12,7 @@ from . import constants, exceptions
 from .schemas import BucketName, ContentType, Key, MaxKeys, xml
 from .store import ObjectStore
 
+tracer = trace.get_tracer(__name__)
 logger = logging.getLogger(__name__)
 
 
@@ -18,6 +20,7 @@ class S3:
     def __init__(self, store: ObjectStore):
         self.store = store
 
+    @tracer.start_as_current_span("list_buckets")
     async def list_buckets(self) -> xml.ListAllMyBucketsResult:
         buckets = await self.store.list_buckets()
         buckets_xml = [
@@ -27,14 +30,38 @@ class S3:
         buckets_model = xml.Buckets(buckets=buckets_xml)
         return xml.ListAllMyBucketsResult(owner=owner, buckets=buckets_model)
 
+    @tracer.start_as_current_span("list_objects")
+    async def list_objects(
+        self,
+        bucket: BucketName,
+        prefix: str | None = None,
+        delimiter: str | None = None,
+        max_keys: MaxKeys = constants.MAX_KEYS,
+        marker: Key | None = None,
+        encoding_type: str | None = None,
+    ) -> xml.ListBucketResult:
+        objects_info = await self.store.list_objects(
+            bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker, encoding_type=encoding_type
+        )
+        return self._build_list_bucket_result(
+            bucket,
+            next_marker=objects_info.next_marker,
+            objects_info=objects_info,
+            prefix=prefix,
+            delimiter=delimiter,
+            max_keys=max_keys,
+        )
+
+    @tracer.start_as_current_span("list_objects_v2")
     async def list_objects_v2(
         self,
         bucket: BucketName,
-        prefix: Key | None = None,
+        prefix: str | None = None,
         delimiter: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
         continuation_token: Key | None = None,
         start_after: Key | None = None,
+        encoding_type: str | None = None,
     ) -> xml.ListBucketResult:
         objects_info = await self.store.list_objects_v2(
             bucket,
@@ -43,41 +70,26 @@ class S3:
             max_keys=max_keys,
             continuation_token=continuation_token,
             start_after=start_after,
+            encoding_type=encoding_type,
         )
         return self._build_list_bucket_result(
             bucket,
-            objects_info,
+            objects_info=objects_info,
             prefix=prefix,
             delimiter=delimiter,
             max_keys=max_keys,
         )
 
-    async def list_objects(
-        self,
-        bucket: BucketName,
-        prefix: Key | None = None,
-        delimiter: str | None = None,
-        max_keys: MaxKeys = constants.MAX_KEYS,
-        marker: Key | None = None,
-    ) -> xml.ListBucketResult:
-        objects_info = await self.store.list_objects(
-            bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker
-        )
-        return self._build_list_bucket_result(
-            bucket,
-            objects_info,
-            prefix=prefix,
-            delimiter=delimiter,
-            max_keys=max_keys,
-        )
-
+    # TODO: exclude None NextMarker from response
     def _build_list_bucket_result(
         self,
         bucket: BucketName,
+        *,
         objects_info: BaseListObjectsInfo,
-        prefix: Key | None = None,
+        prefix: str | None = None,
         delimiter: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
+        next_marker: str = "",
     ) -> xml.ListBucketResult:
         objects: list[xml.Content] = []
         for obj in objects_info.objects:
@@ -99,10 +111,12 @@ class S3:
             key_count=len(objects) + len(objects_info.common_prefixes),
             is_truncated=objects_info.is_truncated,
             delimiter=delimiter,
+            next_marker=next_marker or None,
             contents=objects,
             common_prefixes=[xml.CommonPrefix(prefix=prefix) for prefix in objects_info.common_prefixes],
         )
 
+    @tracer.start_as_current_span("get_object")
     async def get_object(
         self,
         bucket: BucketName,
@@ -153,10 +167,11 @@ class S3:
             status_code=status_code,
         )
 
+    @tracer.start_as_current_span("head_object")
     async def head_object(self, bucket: BucketName, key: Key) -> Response:
         metadata = await self.store.head_object(bucket, key)
         return Response(
-            status_code=200,
+            status_code=status.HTTP_200_OK,
             headers={
                 "Content-Length": str(metadata.size),
                 "ETag": f'"{metadata.etag}"',
@@ -166,6 +181,7 @@ class S3:
             },
         )
 
+    @tracer.start_as_current_span("put_object")
     async def put_object(
         self,
         bucket: BucketName,
@@ -175,27 +191,32 @@ class S3:
     ) -> Response:
         final_content_type = content_type or constants.DEFAULT_CONTENT_TYPE
         result_etag = await self.store.put_object(bucket, key, content, final_content_type)
-        return Response(status_code=200, headers={"ETag": f'"{result_etag}"', "Content-Length": "0"})
+        return Response(status_code=status.HTTP_200_OK, headers={"ETag": f'"{result_etag}"'})
 
-    async def delete_object(self, bucket: BucketName, key: Key) -> None:
+    @tracer.start_as_current_span("delete_object")
+    async def delete_object(self, bucket: BucketName, key: Key) -> Response:
         try:
             await self.store.delete_object(bucket, key)
         except exceptions.NoSuchBucket:
             logger.info("Bucket %s not found", bucket)
         except exceptions.NoSuchKey:
             logger.info("Object %s not found in bucket %s", key, bucket)
-        return None
+        return Response(
+            status_code=status.HTTP_204_NO_CONTENT,
+            headers={
+                "content-length": "0",
+            },
+        )
 
+    @tracer.start_as_current_span("create_bucket")
     async def create_bucket(self, bucket: BucketName) -> Response:
-        try:
-            await self.store.create_bucket(bucket)
-        except exceptions.BucketAlreadyExists:
-            raise HTTPException(status_code=409, detail="Bucket already exists")
-        return Response(status_code=200, headers={"Location": f"/{bucket}"})
+        await self.store.create_bucket(bucket)
+        return Response(status_code=status.HTTP_200_OK, headers={"Location": f"/{bucket}"})
 
+    @tracer.start_as_current_span("delete_bucket")
     async def delete_bucket(self, bucket: BucketName) -> Response:
         try:
             await self.store.delete_bucket(bucket)
         except exceptions.NoSuchBucket:
             logger.info("Bucket %s not found", bucket)
-        return Response(status_code=204)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
