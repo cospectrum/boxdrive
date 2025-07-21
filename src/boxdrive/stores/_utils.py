@@ -3,18 +3,6 @@ import urllib.parse
 from boxdrive.schemas import Key, ListObjectsInfo, ListObjectsV2Info, MaxKeys, ObjectInfo
 
 
-def _encode_keys_and_prefixes(
-    objects: list[ObjectInfo],
-    common_prefixes: list[str],
-    *,
-    encoding_type: str | None = None,
-) -> tuple[list[ObjectInfo], list[str]]:
-    if encoding_type == "url":
-        objects = [obj.model_copy(update={"key": urllib.parse.quote(obj.key)}) for obj in objects]
-        common_prefixes = [urllib.parse.quote(prefix) for prefix in common_prefixes]
-    return objects, common_prefixes
-
-
 def filter_objects(
     objects: list[ObjectInfo],
     *,
@@ -88,3 +76,26 @@ def _split_contents_and_prefixes(
         else:
             contents.append(obj)
     return contents, sorted(common_prefixes)
+
+
+def _encode_keys_and_prefixes(
+    objects: list[ObjectInfo],
+    common_prefixes: list[str],
+    *,
+    encoding_type: str | None = None,
+) -> tuple[list[ObjectInfo], list[str]]:
+    SAFE = [
+        "-",
+        "_",
+        ".",
+        "/",
+        "*",
+    ]
+
+    def quote(s: str) -> str:
+        return urllib.parse.quote(s, safe="".join(SAFE))
+
+    if encoding_type == "url":
+        objects = [obj.model_copy(update={"key": quote(obj.key)}) for obj in objects]
+        common_prefixes = [quote(prefix) for prefix in common_prefixes]
+    return objects, common_prefixes
