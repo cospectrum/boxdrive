@@ -39,10 +39,10 @@ class ObjectStore(ABC):
         self,
         bucket_name: BucketName,
         *,
-        prefix: Key | None = None,
+        prefix: str | None = None,
         delimiter: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
-        marker: Key | None = None,
+        marker: str | None = None,
         encoding_type: str | None = None,
     ) -> ListObjectsInfo:
         """List objects in a bucket."""
@@ -57,7 +57,7 @@ class ObjectStore(ABC):
         delimiter: str | None = None,
         encoding_type: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
-        prefix: Key | None = None,
+        prefix: str | None = None,
         start_after: Key | None = None,
     ) -> ListObjectsV2Info:
         """List objects in a bucket."""

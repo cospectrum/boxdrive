@@ -33,10 +33,10 @@ async def list_buckets(s3: S3Dep) -> XMLResponse:
 @router.get("/{bucket}")
 async def list_objects(
     bucket: BucketName,
-    prefix: Key | None = Query(None),
+    prefix: str | None = Query(None),
     delimiter: str | None = Query(None),
     max_keys: MaxKeys = Query(constants.MAX_KEYS, alias="max-keys"),
-    marker: Key | None = Query(None),
+    marker: str | None = Query(None),
     continuation_token: Key | None = Query(None, alias="continuation-token"),
     start_after: Key | None = Query(None, alias="start-after"),
     list_type: Literal["1", "2"] = Query("1", alias="list-type"),

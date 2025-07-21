@@ -41,9 +41,9 @@ class LogInfo(BaseHTTPMiddleware):
         logger.info(
             "Response info: %s",
             {
+                "status_code": status_code,
                 "method": method,
                 "path": path,
-                "status_code": status_code,
                 "process_time": f"{process_time:.3f}s",
                 "content_length": content_length,
             },

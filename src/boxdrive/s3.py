@@ -30,11 +30,33 @@ class S3:
         buckets_model = xml.Buckets(buckets=buckets_xml)
         return xml.ListAllMyBucketsResult(owner=owner, buckets=buckets_model)
 
+    @tracer.start_as_current_span("list_objects")
+    async def list_objects(
+        self,
+        bucket: BucketName,
+        prefix: str | None = None,
+        delimiter: str | None = None,
+        max_keys: MaxKeys = constants.MAX_KEYS,
+        marker: Key | None = None,
+        encoding_type: str | None = None,
+    ) -> xml.ListBucketResult:
+        objects_info = await self.store.list_objects(
+            bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker, encoding_type=encoding_type
+        )
+        return self._build_list_bucket_result(
+            bucket,
+            next_marker=objects_info.next_marker,
+            objects_info=objects_info,
+            prefix=prefix,
+            delimiter=delimiter,
+            max_keys=max_keys,
+        )
+
     @tracer.start_as_current_span("list_objects_v2")
     async def list_objects_v2(
         self,
         bucket: BucketName,
-        prefix: Key | None = None,
+        prefix: str | None = None,
         delimiter: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
         continuation_token: Key | None = None,
@@ -52,40 +74,22 @@ class S3:
         )
         return self._build_list_bucket_result(
             bucket,
-            objects_info,
+            objects_info=objects_info,
             prefix=prefix,
             delimiter=delimiter,
             max_keys=max_keys,
         )
 
-    @tracer.start_as_current_span("list_objects")
-    async def list_objects(
-        self,
-        bucket: BucketName,
-        prefix: Key | None = None,
-        delimiter: str | None = None,
-        max_keys: MaxKeys = constants.MAX_KEYS,
-        marker: Key | None = None,
-        encoding_type: str | None = None,
-    ) -> xml.ListBucketResult:
-        objects_info = await self.store.list_objects(
-            bucket, prefix=prefix, delimiter=delimiter, max_keys=max_keys, marker=marker, encoding_type=encoding_type
-        )
-        return self._build_list_bucket_result(
-            bucket,
-            objects_info,
-            prefix=prefix,
-            delimiter=delimiter,
-            max_keys=max_keys,
-        )
-
+    # TODO: exclude None NextMarker from response
     def _build_list_bucket_result(
         self,
         bucket: BucketName,
+        *,
         objects_info: BaseListObjectsInfo,
-        prefix: Key | None = None,
+        prefix: str | None = None,
         delimiter: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
+        next_marker: str = "",
     ) -> xml.ListBucketResult:
         objects: list[xml.Content] = []
         for obj in objects_info.objects:
@@ -107,6 +111,7 @@ class S3:
             key_count=len(objects) + len(objects_info.common_prefixes),
             is_truncated=objects_info.is_truncated,
             delimiter=delimiter,
+            next_marker=next_marker or None,
             contents=objects,
             common_prefixes=[xml.CommonPrefix(prefix=prefix) for prefix in objects_info.common_prefixes],
         )

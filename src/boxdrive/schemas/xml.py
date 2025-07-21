@@ -66,3 +66,4 @@ class ListBucketResult(BaseXmlModel):
     delimiter: str | None = element(tag="Delimiter", default=None)
     contents: list[Content] = element(tag="Contents")
     common_prefixes: list[CommonPrefix] = element(tag="CommonPrefixes")
+    next_marker: str | None = element(tag="NextMarker", default=None)

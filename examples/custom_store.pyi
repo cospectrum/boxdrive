@@ -25,10 +25,10 @@ class MyCustomStore(ObjectStore):
         self,
         bucket_name: BucketName,
         *,
-        prefix: Key | None = None,
+        prefix: str | None = None,
         delimiter: str | None = None,
         max_keys: MaxKeys = 1000,
-        marker: Key | None = None,
+        marker: str | None = None,
         encoding_type: str | None = None,
     ) -> ListObjectsInfo: ...
     async def list_objects_v2(
@@ -39,6 +39,6 @@ class MyCustomStore(ObjectStore):
         delimiter: str | None = None,
         encoding_type: str | None = None,
         max_keys: MaxKeys = 1000,
-        prefix: Key | None = None,
+        prefix: str | None = None,
         start_after: Key | None = None,
     ) -> ListObjectsV2Info: ...

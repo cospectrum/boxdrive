@@ -78,7 +78,7 @@ class InMemoryStore(ObjectStore):
         self,
         bucket_name: str,
         *,
-        prefix: Key | None = None,
+        prefix: str | None = None,
         delimiter: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
         marker: Key | None = None,
@@ -100,7 +100,7 @@ class InMemoryStore(ObjectStore):
         delimiter: str | None = None,
         encoding_type: str | None = None,
         max_keys: MaxKeys = constants.MAX_KEYS,
-        prefix: Key | None = None,
+        prefix: str | None = None,
         start_after: Key | None = None,
     ) -> ListObjectsV2Info:
         bucket = self.buckets.get(bucket_name)

@@ -6,7 +6,7 @@ from boxdrive.schemas import Key, ListObjectsInfo, ListObjectsV2Info, MaxKeys, O
 def filter_objects(
     objects: list[ObjectInfo],
     *,
-    prefix: Key | None = None,
+    prefix: str | None = None,
     delimiter: str | None = None,
     max_keys: MaxKeys = 1000,
     marker: Key | None = None,
@@ -24,10 +24,19 @@ def filter_objects(
 
     objects, common_prefixes = _split_contents_and_prefixes(objects, prefix=prefix, delimiter=delimiter)
     objects, common_prefixes = _encode_keys_and_prefixes(objects, common_prefixes, encoding_type=encoding_type)
+
+    next_marker = ""
+    if is_truncated:
+        if common_prefixes:
+            next_marker = common_prefixes[-1]
+        elif objects:
+            next_marker = objects[-1].key
+
     return ListObjectsInfo(
         is_truncated=is_truncated,
         common_prefixes=common_prefixes,
         objects=objects,
+        next_marker=next_marker,
     )
 
 
@@ -38,7 +47,7 @@ def filter_objects_v2(
     delimiter: str | None = None,
     encoding_type: str | None = None,
     max_keys: MaxKeys = 1000,
-    prefix: Key | None = None,
+    prefix: str | None = None,
     start_after: Key | None = None,
 ) -> ListObjectsV2Info:
     if prefix:
